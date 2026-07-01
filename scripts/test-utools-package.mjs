@@ -9,6 +9,7 @@ import { chromium } from "playwright";
 
 const root = process.cwd();
 const packagePath = join(root, "dist", "cigna-claim-assistant-utools.upx");
+const rootPackage = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
 const info = await stat(packagePath).catch(() => null);
 assert.equal(Boolean(info?.isFile()), true, "uTools package is missing");
 assert.equal(info.size > 1_000_000, true, "uTools package is unexpectedly small");
@@ -30,6 +31,7 @@ for (const file of [
 
 const pluginJson = JSON.parse(await run("unzip", ["-p", packagePath, "plugin.json"]));
 assert.equal(pluginJson.pluginName, "Cigna Claim Assistant");
+assert.equal(pluginJson.version, rootPackage.version);
 assert.equal(pluginJson.main, "index.html");
 assert.equal(pluginJson.preload, "preload.js");
 assert.equal(pluginJson.features[0].code, "cigna-claim-assistant");

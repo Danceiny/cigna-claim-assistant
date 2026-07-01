@@ -59,7 +59,9 @@ for (const file of [
 
 const manifest = JSON.parse(await unzip(["-p", releaseZip, `${releasePrefix}extension/manifest.json`]));
 const releaseManifest = JSON.parse(await unzip(["-p", releaseZip, `${releasePrefix}release-manifest.json`]));
+const rootPackage = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
 assert.equal(manifest.manifest_version, 3);
+assert.equal(manifest.version, rootPackage.version);
 assert.equal(manifest.action.default_popup, "popup.html");
 assert.equal(manifest.side_panel.default_path, "assistant.html");
 assert.deepEqual(Object.keys(manifest.icons || {}).sort(), ["128", "16", "32", "48"]);
@@ -85,7 +87,6 @@ assert.equal(releaseManifest.files["extension/popup.js"].sha256, sha256(await un
 assert.equal(releaseManifest.files["cigna-claim-assistant-utools.upx"].sha256, sha256(await unzipRaw(["-p", releaseZip, `${releasePrefix}cigna-claim-assistant-utools.upx`])));
 
 const helperPackage = JSON.parse(await unzip(["-p", releaseZip, `${releasePrefix}package.json`]));
-const rootPackage = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
 assert.equal(helperPackage.scripts["claims:scan"], "node scripts/scan-claims.mjs");
 assert.equal(helperPackage.scripts["claims:ocr-sidecars"], "node scripts/generate-ocr-sidecars.mjs");
 assert.equal(helperPackage.scripts["claims:test:core-sync"], "node scripts/test-core-sync.mjs");
@@ -104,6 +105,7 @@ const utoolsPlugin = JSON.parse(await unzip(["-p", releaseZip, `${releasePrefix}
 const utoolsPreload = await unzip(["-p", releaseZip, `${releasePrefix}utools/preload.js`]);
 const utoolsRenderer = await unzip(["-p", releaseZip, `${releasePrefix}utools/renderer.js`]);
 assert.equal(utoolsPlugin.pluginName, "Cigna Claim Assistant");
+assert.equal(utoolsPlugin.version, rootPackage.version);
 assert.equal(utoolsPlugin.main, "index.html");
 assert.equal(utoolsPlugin.preload, "preload.js");
 assert.match(utoolsPreload, /scanDirectory/);

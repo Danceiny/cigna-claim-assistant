@@ -6,8 +6,10 @@ import { join } from "node:path";
 const root = process.cwd();
 const extensionDir = join(root, "extension");
 const manifest = JSON.parse(await readFile(join(extensionDir, "manifest.json"), "utf8"));
+const packageJson = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
 
 assert.equal(manifest.manifest_version, 3);
+assert.equal(manifest.version, packageJson.version);
 assert.equal(manifest.action.default_popup, "popup.html");
 assert.equal(manifest.side_panel.default_path, "assistant.html");
 assert.equal(manifest.permissions.includes("sidePanel"), true);

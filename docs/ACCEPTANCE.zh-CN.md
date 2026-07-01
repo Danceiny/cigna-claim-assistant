@@ -4,7 +4,7 @@
 
 ## 当前结论
 
-源码、自动化测试和 v0.1.1 发布包已经证明 Chrome 插件 + uTools 插件的小工具形态可交付；mock Cigna 页面已经覆盖从文件识别到自动填写、点击日期选择器、上传附件、选择付款账户和提交结果记录的链路。
+源码、自动化测试和当前发布包已经证明 Chrome 插件 + uTools 插件的小工具形态可交付；mock Cigna 页面已经覆盖从文件识别到自动填写、点击日期选择器、上传附件、选择付款账户和提交结果记录的链路。
 
 仍未证明的唯一上线项是：在真实登录态 Cigna Envoy 页面完成最终提交，并拿到真实提交结果。发布包因此仍把 `release-manifest.json` 中的 `limits.realCignaEndToEndVerified` 标记为 `false`。
 
