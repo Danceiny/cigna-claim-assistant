@@ -47,6 +47,23 @@ globalThis.chrome = {
       assert.equal(message.type, "CIGNA_SUBMIT_CLAIMS");
       submitCallCount += 1;
       assert.ok(message.batchId);
+      if (message.dryRun) {
+        await sendRuntimeMessage({
+          type: "CIGNA_SUBMISSION_PROGRESS",
+          batchId: message.batchId,
+          event: "claim-dry-run-ready",
+          index: 0,
+          total: 1,
+          claim: { id: "claim-dry-run", serviceDate: "2026-05-14", claimDate: "2026-05-05" },
+          result: { id: "claim-dry-run", status: "dry-run-ready", dryRun: true },
+        });
+        return {
+          ok: true,
+          results: [
+            { id: "claim-dry-run", status: "dry-run-ready", dryRun: true },
+          ],
+        };
+      }
       await sendRuntimeMessage({
         type: "CIGNA_SUBMISSION_PROGRESS",
         batchId: message.batchId,
@@ -192,6 +209,36 @@ assert.equal(storage.submissionStatus.progress[0].result.submissionId, "99900123
 assert.equal(storage.submissionStatus.progress[1].event, "claim-failed");
 assert.equal(storage.submissionStatus.progress[1].result.error, "mock failure");
 
+const ledgerBeforeDryRun = JSON.stringify(storage.ledger);
+const dryRunResponse = await sendRuntimeMessage({
+  type: "CIGNA_START_SUBMISSION",
+  dryRun: true,
+  submissionFingerprint: "dryrun123",
+  claims: [
+    { id: "claim-dry-run", beneficiaryName: "TEST USER", claimDate: "2026-05-05", files: [] },
+  ],
+  ledgerClaims: [
+    {
+      id: "claim-dry-run",
+      serviceDate: "2026-05-14",
+      claimDate: "2026-05-05",
+      submissionFingerprint: "dryrun123",
+      fileNames: ["0514_1.pdf", "0514_2.pdf"],
+      fileHashes: ["hash-dry-a", "hash-dry-b"],
+    },
+  ],
+});
+assert.equal(dryRunResponse.ok, true);
+assert.equal(dryRunResponse.results[0].status, "dry-run-ready");
+assert.equal(sentMessage.message.dryRun, true);
+assert.equal(JSON.stringify(storage.ledger), ledgerBeforeDryRun);
+assert.equal(storage.lastSubmission.dryRun, true);
+assert.equal(storage.submissionStatus.status, "dry-run-ready");
+assert.equal(storage.submissionStatus.dryRunReady, 1);
+assert.equal(storage.submissionStatus.submitted, 0);
+assert.equal(storage.submissionStatus.progress[0].event, "claim-dry-run-ready");
+assert.equal(submitCallCount, 2);
+
 storage.submissionStatus = { status: "submitting", batchId: "active-batch", total: 1, updatedAt: new Date().toISOString() };
 const duplicateStartResponse = await sendRuntimeMessage({
   type: "CIGNA_START_SUBMISSION",
@@ -202,7 +249,7 @@ const duplicateStartResponse = await sendRuntimeMessage({
 });
 assert.equal(duplicateStartResponse.ok, false);
 assert.match(duplicateStartResponse.error, /已有理赔提交正在进行中/);
-assert.equal(submitCallCount, 1);
+assert.equal(submitCallCount, 2);
 storage.submissionStatus = { status: "submitting", batchId: "stale-batch", total: 1, updatedAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString() };
 const staleLockResponse = await sendRuntimeMessage({
   type: "CIGNA_START_SUBMISSION",
@@ -212,7 +259,7 @@ const staleLockResponse = await sendRuntimeMessage({
   ledgerClaims: [],
 });
 assert.equal(staleLockResponse.ok, true);
-assert.equal(submitCallCount, 2);
+assert.equal(submitCallCount, 3);
 
 precheckReady = false;
 sentMessage = undefined;
@@ -225,7 +272,7 @@ const blockedResponse = await sendRuntimeMessage({
 });
 assert.equal(blockedResponse.ok, false);
 assert.match(blockedResponse.error, /Cigna 页面结构检查未通过/);
-assert.equal(submitCallCount, 2);
+assert.equal(submitCallCount, 3);
 assert.notEqual(sentMessage?.message?.type, "CIGNA_SUBMIT_CLAIMS");
 assert.equal(storage.submissionStatus.status, "failed");
 assert.match(storage.submissionStatus.error, /beneficiary-card/);

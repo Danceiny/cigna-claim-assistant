@@ -9,7 +9,7 @@ if (globalThis.chrome?.runtime?.onMessage) {
       return undefined;
     }
     if (message?.type !== "CIGNA_SUBMIT_CLAIMS") return undefined;
-    submitClaims(message.claims, { batchId: message.batchId })
+    submitClaims(message.claims, { batchId: message.batchId, dryRun: Boolean(message.dryRun) })
       .then((result) => sendResponse({ ok: true, ...result }))
       .catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
@@ -28,7 +28,7 @@ async function submitClaims(claims, options = {}) {
     });
     let result;
     try {
-      result = await submitClaim(claim);
+      result = await submitClaim(claim, { dryRun: Boolean(options.dryRun) });
     } catch (error) {
       result = {
         id: claim.id,
@@ -38,7 +38,7 @@ async function submitClaims(claims, options = {}) {
     }
     results.push(result);
     await emitSubmissionProgress(options.batchId, {
-      event: result.status === "submitted" ? "claim-submitted" : "claim-failed",
+      event: result.status === "submitted" ? "claim-submitted" : result.status === "dry-run-ready" ? "claim-dry-run-ready" : "claim-failed",
       index,
       total: claims.length,
       claim: claimSummary(claim),
@@ -48,7 +48,7 @@ async function submitClaims(claims, options = {}) {
   return { results };
 }
 
-async function submitClaim(claim) {
+async function submitClaim(claim, options = {}) {
   if (!claim.beneficiaryName?.trim()) throw new Error("缺少被保险人姓名。");
   window.__cignaClaimBeneficiaryName = claim.beneficiaryName.trim();
   await ensureSubmitClaimPage();
@@ -67,6 +67,15 @@ async function submitClaim(claim) {
   await confirmUploadedFiles();
   if (claim.paymentLabel) await selectPaymentAccount(claim.paymentLabel);
   await clickButton("继续");
+  if (options.dryRun) {
+    await waitForText("请检查并提交", 30000);
+    return {
+      id: claim.id,
+      status: "dry-run-ready",
+      dryRun: true,
+      message: "已到达 Cigna 最终检查页，未勾选免责声明，未点击最终提交。",
+    };
+  }
   await agreeAndSubmit();
   const submission = await waitForSubmissionResult();
 

@@ -33,6 +33,42 @@ try {
   const precheck = await page.evaluate(() => window.__cignaClaimSubmitter.precheckPage("TEST BENEFICIARY"));
   if (!precheck.ready) throw new Error(`Mock precheck failed: ${JSON.stringify(precheck)}`);
 
+  const dryRunResult = await page.evaluate(async () => {
+    const pdfA = btoa("%PDF-1.4 fake claim form");
+    const pdfB = btoa("%PDF-1.4 fake invoice");
+    return window.__cignaClaimSubmitter.submitClaims([
+      {
+        id: "mock-claim-dry-run",
+        beneficiaryName: "TEST BENEFICIARY",
+        claimDate: "2026-05-05",
+        diagnosis: "LOWER-BACK-PAIN",
+        paymentLabel: "BANK 0001",
+        files: [
+          { name: "0510_1.pdf", type: "application/pdf", base64: pdfA },
+          { name: "0510_2.pdf", type: "application/pdf", base64: pdfB },
+        ],
+      },
+    ], { dryRun: true });
+  });
+  const dryRun = dryRunResult.results?.[0];
+  if (dryRun?.status !== "dry-run-ready" || dryRun?.dryRun !== true) {
+    throw new Error(`Expected dry run to stop before final submit: ${JSON.stringify(dryRunResult)}`);
+  }
+  const dryRunState = await page.evaluate(() => ({
+    step: window.__cignaMockState.step,
+    agreed: window.__cignaMockState.agreed,
+    submitted: window.__cignaMockState.submitted,
+  }));
+  if (dryRunState.step !== "review" || dryRunState.agreed || dryRunState.submitted) {
+    throw new Error(`Dry run changed final submit state: ${JSON.stringify(dryRunState)}`);
+  }
+
+  await page.goto(`http://127.0.0.1:${port}/s/new-submitclaim?LanguageCode=zh_CN&language=zh_CN`);
+  await page.addScriptTag({ path: contentScriptPath });
+  await page.evaluate(() => {
+    window.__cignaClaimSleepScale = 0.01;
+  });
+
   const result = await page.evaluate(async () => {
     const pdfA = btoa("%PDF-1.4 fake claim form");
     const pdfB = btoa("%PDF-1.4 fake invoice");

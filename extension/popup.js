@@ -17,6 +17,7 @@ const pickFilesButton = document.querySelector("#pickFiles");
 const analyzeButton = document.querySelector("#analyze");
 const compressButton = document.querySelector("#compress");
 const preflightSubmitButton = document.querySelector("#preflightSubmit");
+const dryRunSubmitButton = document.querySelector("#dryRunSubmit");
 const submitButton = document.querySelector("#submit");
 const autoSubmitButton = document.querySelector("#autoSubmit");
 const openCignaButton = document.querySelector("#openCigna");
@@ -163,6 +164,21 @@ submitButton.addEventListener("click", async () => {
   }
 });
 
+dryRunSubmitButton.addEventListener("click", async () => {
+  if (!state.plan) return;
+  try {
+    dryRunSubmitButton.disabled = true;
+    await runSubmission({
+      dryRun: true,
+      note: "真实页面彩排会在 Cigna 最终检查页停止，不勾选免责声明，不点击最终提交，也不会写入防重账本。",
+    });
+  } catch (error) {
+    log(`真实页面彩排失败: ${error.message}`);
+  } finally {
+    dryRunSubmitButton.disabled = submittableClaims(state.plan).length === 0;
+  }
+});
+
 exportLedgerButton.addEventListener("click", exportLedger);
 importLedgerButton.addEventListener("click", () => ledgerFileInput.click());
 ledgerFileInput.addEventListener("change", async () => {
@@ -304,9 +320,11 @@ async function runSubmission(options = {}) {
   const fingerprint = submissionFingerprint(claimsToSubmit, settings);
   const audit = buildSubmissionAudit({ plan: state.plan, claimsToSubmit, settings, fingerprint, note: options.note || "" });
   await chrome.storage.local.set({ lastSubmissionAudit: audit });
-  log(`${options.note ? `${options.note}\n` : ""}${formatSubmissionAudit(audit)}\n后台开始提交 ${claimsToSubmit.length} 个理赔单...`);
+  const actionLabel = options.dryRun ? "真实页面彩排" : "提交";
+  log(`${options.note ? `${options.note}\n` : ""}${formatSubmissionAudit(audit)}\n后台开始${actionLabel} ${claimsToSubmit.length} 个理赔单...`);
   const response = await chrome.runtime.sendMessage({
     type: "CIGNA_START_SUBMISSION",
+    dryRun: Boolean(options.dryRun),
     submissionFingerprint: fingerprint,
     claims: await Promise.all(claimsToSubmit.map(serializeClaimForContentScript)),
     ledgerClaims: claimsToSubmit.map((claim) => claimForLedger(claim, fingerprint)),
@@ -864,6 +882,7 @@ function renderPlan(plan) {
   ].join("\n");
   compressButton.disabled = !plan.claims.some((claim) => claim.compression.required);
   preflightSubmitButton.disabled = toSubmit.length === 0;
+  dryRunSubmitButton.disabled = toSubmit.length === 0;
   submitButton.disabled = toSubmit.length === 0;
   exportPlanButton.disabled = false;
   claimsEl.innerHTML = "";
@@ -1360,6 +1379,7 @@ function setSelectedFiles(files, options = {}) {
   summaryEl.textContent = "";
   submitButton.disabled = true;
   preflightSubmitButton.disabled = true;
+  dryRunSubmitButton.disabled = true;
   compressButton.disabled = true;
   exportPlanButton.disabled = true;
   autoSubmitButton.disabled = state.files.length === 0;
@@ -1389,6 +1409,7 @@ function clearCurrentBatch(message = "已清空当前批次。") {
   summaryEl.textContent = "";
   submitButton.disabled = true;
   preflightSubmitButton.disabled = true;
+  dryRunSubmitButton.disabled = true;
   compressButton.disabled = true;
   exportPlanButton.disabled = true;
   autoSubmitButton.disabled = true;
@@ -1464,6 +1485,7 @@ function setActionButtonsDisabled(disabled) {
   compressButton.disabled = disabled || !state.plan?.claims.some((claim) => claim.compression.required);
   submitButton.disabled = disabled || !state.plan || submittableClaims(state.plan).length === 0;
   preflightSubmitButton.disabled = disabled || !state.plan || submittableClaims(state.plan).length === 0;
+  dryRunSubmitButton.disabled = disabled || !state.plan || submittableClaims(state.plan).length === 0;
   exportPlanButton.disabled = disabled || !state.plan;
   autoSubmitButton.disabled = disabled;
 }
@@ -1524,6 +1546,8 @@ function formatSubmissionStatus(status) {
     injecting: "正在注入提交脚本",
     prechecking: "正在检查 Cigna 页面",
     submitting: "正在提交",
+    "dry-running": "正在真实页面彩排",
+    "dry-run-ready": "彩排到达最终检查页",
     submitted: "提交完成",
     failed: "提交失败",
   };
@@ -1531,13 +1555,14 @@ function formatSubmissionStatus(status) {
     `${labels[status.status] || status.status} (${status.updatedAt || ""})`,
   ];
   if (status.total != null) lines.push(`理赔单: ${status.submitted || 0}/${status.total}`);
+  if (status.dryRunReady != null) lines.push(`彩排完成: ${status.dryRunReady}/${status.total}`);
   if (status.failed) lines.push(`失败: ${status.failed}`);
-  if (status.current != null && status.status === "submitting") lines.push(`当前: ${status.current}/${status.total}`);
+  if (status.current != null && ["submitting", "dry-running"].includes(status.status)) lines.push(`当前: ${status.current}/${status.total}`);
   if (status.error) lines.push(status.error);
   if (status.progress?.length) {
     lines.push(...status.progress.map((entry) => {
       const date = entry.claim?.serviceDate || entry.claim?.claimDate || entry.claim?.id || `#${entry.index + 1}`;
-      const label = entry.event === "claim-submitted" ? "完成" : entry.event === "claim-failed" ? "失败" : "提交中";
+      const label = entry.event === "claim-submitted" ? "完成" : entry.event === "claim-dry-run-ready" ? "彩排完成" : entry.event === "claim-failed" ? "失败" : "提交中";
       const submission = entry.result?.submissionId ? ` #${entry.result.submissionId}` : "";
       const error = entry.result?.error ? `: ${entry.result.error}` : "";
       return `${entry.index + 1}. ${date}: ${label}${submission}${error}`;
@@ -1550,7 +1575,7 @@ function formatSubmissionStatus(status) {
 }
 
 function isActiveSubmissionStatus(status) {
-  if (!["queued", "opening-tab", "injecting", "prechecking", "submitting"].includes(status?.status)) return false;
+  if (!["queued", "opening-tab", "injecting", "prechecking", "submitting", "dry-running"].includes(status?.status)) return false;
   const updatedAt = Date.parse(status.updatedAt || "");
   if (!Number.isFinite(updatedAt)) return true;
   return Date.now() - updatedAt < ACTIVE_SUBMISSION_TTL_MS;

@@ -91,7 +91,7 @@
         <h2>使用前确认</h2>
         <ul>
           <li>必须安装到你平时登录 Cigna 的 Chrome，不要用临时 Chrome profile。</li>
-          <li>真实提交前先点扩展里的 <code>检查 Cigna 页面</code> 和 <code>提交预检</code>。</li>
+          <li>真实提交前先点扩展里的 <code>检查 Cigna 页面</code> 和 <code>提交预检</code>；需要验证真实页面流程时可先跑 <code>真实页面彩排</code>。</li>
           <li>日期由扩展在 Cigna 日期选择器里点击，不会手动输入。</li>
         </ul>
       </section>
@@ -127,6 +127,7 @@
           <li>点击 <code>识别文件</code>，检查 <code>将提交 / 将跳过 / 需压缩</code>。</li>
           <li>如果 <code>需压缩</code> 不为 0，先点击 <code>压缩 PDF</code>。</li>
           <li>点击 <code>提交预检</code>，确认日期、字段、附件名、大小和 hash。</li>
+          <li>可选：点击 <code>真实页面彩排</code>，它会上传附件并走到最终检查页，但不会勾选免责声明、不会点击最终提交，也不会写入防重账本。</li>
           <li>确认无误后点击 <code>自动处理并提交</code>。</li>
         </ol>
       </section>

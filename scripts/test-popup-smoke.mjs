@@ -100,6 +100,25 @@ try {
             };
           }
           if (message.type === "CIGNA_START_SUBMISSION") {
+            if (message.dryRun) {
+              const results = (message.claims || []).map((claim) => ({
+                id: claim.id,
+                status: "dry-run-ready",
+                dryRun: true,
+              }));
+              await window.chrome.storage.local.set({
+                lastSubmission: { at: new Date().toISOString(), dryRun: true, results },
+                submissionStatus: {
+                  status: "dry-run-ready",
+                  dryRun: true,
+                  dryRunReady: results.length,
+                  total: results.length,
+                  results,
+                  updatedAt: new Date().toISOString(),
+                },
+              });
+              return { ok: true, results };
+            }
             const ledger = store.ledger || { fileHashes: [], claimKeys: [], serviceDates: [], submissions: [] };
             const fileHashes = new Set(ledger.fileHashes || []);
             const claimKeys = new Set(ledger.claimKeys || []);
@@ -657,6 +676,20 @@ try {
   assert.equal(await page.evaluate(() => window.__lastExportedJson.claims[0].files.some((file) => "base64" in file)), false);
   assert.match(await page.locator("#log").innerText(), /提交预检通过/);
   assert.equal(await page.evaluate(() => window.__lastRuntimeMessage), undefined);
+  assert.equal(await page.locator("#dryRunSubmit").isDisabled(), false);
+  const ledgerBeforeDryRun = await page.evaluate(() => JSON.stringify(window.__chromeStore.ledger || {}));
+  await page.locator("#dryRunSubmit").click();
+  await page.waitForFunction(() => window.__lastRuntimeMessage?.type === "CIGNA_START_SUBMISSION" && window.__lastRuntimeMessage?.dryRun === true);
+  const dryRunMessage = await page.evaluate(() => window.__lastRuntimeMessage);
+  assert.equal(dryRunMessage.claims.length, 1);
+  assert.equal(dryRunMessage.ledgerClaims[0].submissionFingerprint, await page.evaluate(() => window.__lastExportedJson.submissionFingerprint));
+  assert.equal(await page.evaluate(() => window.__chromeStore.lastSubmission?.dryRun), true);
+  assert.equal(await page.evaluate(() => window.__chromeStore.submissionStatus?.status), "dry-run-ready");
+  assert.equal(await page.evaluate(() => JSON.stringify(window.__chromeStore.ledger || {})), ledgerBeforeDryRun);
+  assert.match(await page.locator("#log").innerText(), /真实页面彩排/);
+  await page.evaluate(() => {
+    window.__lastRuntimeMessage = undefined;
+  });
   await page.evaluate(() => {
     window.__chromeStore.submissionStatus = {
       status: "submitting",

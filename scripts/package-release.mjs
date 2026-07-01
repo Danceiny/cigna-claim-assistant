@@ -137,6 +137,7 @@ async function writeReleaseManifest() {
       "duplicate-ledger",
       "pdf-compression",
       "submit-preflight",
+      "live-cigna-dry-run",
       "submission-audit-snapshot",
       "cigna-page-precheck",
       "cigna-page-diagnostics-export",

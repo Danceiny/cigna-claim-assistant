@@ -28,6 +28,7 @@ async function startSubmission(message) {
   const claims = message.claims || [];
   const ledgerClaims = message.ledgerClaims || [];
   const submissionFingerprint = message.submissionFingerprint || "";
+  const dryRun = Boolean(message.dryRun);
   if (!claims.length) throw new Error("没有可提交的理赔单。");
   const beneficiaryName = claims[0]?.beneficiaryName?.trim();
   if (!beneficiaryName) throw new Error("缺少被保险人姓名，不能检查 Cigna 页面。");
@@ -37,33 +38,37 @@ async function startSubmission(message) {
   }
   const batchId = `batch-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-  await writeSubmissionStatus("queued", { batchId, total: claims.length, submissionFingerprint, progress: [] });
+  await writeSubmissionStatus("queued", { batchId, total: claims.length, submissionFingerprint, dryRun, progress: [] });
   try {
-    await writeSubmissionStatus("opening-tab", { batchId, total: claims.length, submissionFingerprint, progress: [] });
+    await writeSubmissionStatus("opening-tab", { batchId, total: claims.length, submissionFingerprint, dryRun, progress: [] });
     const tab = await prepareClaimTab(await findCignaTab({ openIfMissing: true }));
-    await writeSubmissionStatus("injecting", { batchId, total: claims.length, submissionFingerprint, tabId: tab.id, progress: [] });
+    await writeSubmissionStatus("injecting", { batchId, total: claims.length, submissionFingerprint, dryRun, tabId: tab.id, progress: [] });
     await ensureSubmitterInjected(tab.id);
-    await writeSubmissionStatus("prechecking", { batchId, total: claims.length, submissionFingerprint, tabId: tab.id, progress: [] });
+    await writeSubmissionStatus("prechecking", { batchId, total: claims.length, submissionFingerprint, dryRun, tabId: tab.id, progress: [] });
     await assertCignaPageReady(tab.id, beneficiaryName);
-    await writeSubmissionStatus("submitting", { batchId, total: claims.length, submissionFingerprint, tabId: tab.id, progress: [] });
+    await writeSubmissionStatus(dryRun ? "dry-running" : "submitting", { batchId, total: claims.length, submissionFingerprint, dryRun, tabId: tab.id, progress: [] });
     const response = await chrome.tabs.sendMessage(tab.id, {
       type: "CIGNA_SUBMIT_CLAIMS",
       batchId,
+      dryRun,
       claims,
     });
     if (!response?.ok) throw new Error(response?.error || "Cigna 页面提交失败。");
-    await recordSubmittedClaims(ledgerClaims, response.results || []);
+    if (!dryRun) await recordSubmittedClaims(ledgerClaims, response.results || []);
     const lastSubmission = {
       at: new Date().toISOString(),
+      dryRun,
       results: response.results || [],
     };
     await chrome.storage.local.set({ lastSubmission });
     const { submissionStatus } = await chrome.storage.local.get(["submissionStatus"]);
-    await writeSubmissionStatus("submitted", {
+    await writeSubmissionStatus(dryRun ? "dry-run-ready" : "submitted", {
       batchId,
       total: claims.length,
       submissionFingerprint,
+      dryRun,
       submitted: (response.results || []).filter((result) => result.status === "submitted").length,
+      dryRunReady: (response.results || []).filter((result) => result.status === "dry-run-ready").length,
       failed: (response.results || []).filter((result) => result.status === "failed").length,
       results: response.results || [],
       progress: submissionStatus?.batchId === batchId ? submissionStatus.progress || [] : [],
@@ -74,6 +79,7 @@ async function startSubmission(message) {
       batchId,
       total: claims.length,
       submissionFingerprint,
+      dryRun,
       error: error.message,
     });
     throw error;
@@ -147,7 +153,7 @@ async function handleSubmissionProgress(message) {
   }
   progress.sort((a, b) => a.index - b.index);
   const { status, updatedAt, ...statusDetails } = submissionStatus;
-  await writeSubmissionStatus("submitting", {
+  await writeSubmissionStatus(submissionStatus.dryRun ? "dry-running" : "submitting", {
     ...statusDetails,
     current: message.index + 1,
     total: message.total,
@@ -258,7 +264,7 @@ async function writeSubmissionStatus(status, patch = {}) {
 }
 
 function isActiveSubmissionStatus(status) {
-  if (!["queued", "opening-tab", "injecting", "prechecking", "submitting"].includes(status?.status)) return false;
+  if (!["queued", "opening-tab", "injecting", "prechecking", "submitting", "dry-running"].includes(status?.status)) return false;
   const updatedAt = Date.parse(status.updatedAt || "");
   if (!Number.isFinite(updatedAt)) return true;
   return Date.now() - updatedAt < ACTIVE_SUBMISSION_TTL_MS;
