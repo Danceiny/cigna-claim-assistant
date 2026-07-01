@@ -51,7 +51,19 @@
   - 压缩成功日志会显示原始大小、压缩后大小和使用的 scale/quality；如果仍超限，错误会显示最佳结果和每档尝试大小，方便改用外部压缩后再拖回工具。
   - 本地 CLI 批量压缩优先使用 Chromium + PDF.js + pdf-lib 重建扫描 PDF，会尝试多档分辨率和 JPEG 质量直到达标，并保留 macOS ColorSync/Quartz filter 作为非优先路径。
 
-## 安装扩展
+## 从 GitHub Releases 安装
+
+普通使用优先下载 GitHub Release 附件，不需要自己打包：
+
+1. 打开 [Releases](https://github.com/Danceiny/cigna-claim-assistant/releases)。
+2. 下载 `cigna-claim-assistant-release.zip`。
+3. 解压后双击 `START.html` 或 `OPEN_INSTALLER.command` 查看安装入口。
+4. Chrome 插件安装使用解压目录里的 `extension/` 文件夹。
+5. uTools 插件导入同目录里的 `cigna-claim-assistant-utools.upx`。
+
+也可以单独下载 `cigna-claim-assistant.zip` 归档 Chrome 扩展，或下载 `cigna-claim-assistant-utools.upx` 只安装 uTools 桌面伴侣。真实 Cigna 自动提交仍由 Chrome 插件完成。
+
+## 从源码安装扩展
 
 1. 打开 Chrome: `chrome://extensions`
 2. 打开 Developer mode。
