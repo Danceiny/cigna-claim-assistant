@@ -43,6 +43,7 @@ try {
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/popup.html`);
     await page.waitForSelector("#autoSubmit", { timeout: 10000 });
+    await page.waitForFunction(() => document.querySelector("#autoSubmitOnSelect")?.checked === true, null, { timeout: 10000 });
 
     assert.equal(await page.locator("#diagnosis").inputValue(), "");
     assert.equal(await page.locator("#country").inputValue(), "阿拉伯联合酋长国");

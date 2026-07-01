@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify release build
+        run: xvfb-run -a npm run verify:release
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          cat > release-notes.md <<EOF
+          Automated release for $TAG_NAME.
+
+          Assets:
+          - cigna-claim-assistant-release.zip: full delivery bundle with Chrome extension, uTools package, installer page, docs, helper scripts, and verification manifest.
+          - cigna-claim-assistant.zip: Chrome extension archive.
+          - cigna-claim-assistant-utools.upx: uTools desktop companion package.
+
+          Verified in GitHub Actions with npm run verify:release.
+
+          Limit: mock Cigna end-to-end coverage and extension load verification are included; real logged-in Cigna Envoy submission still needs to be validated in the target user browser/account.
+          EOF
+          gh release create "$TAG_NAME" \
+            dist/cigna-claim-assistant-release.zip \
+            dist/cigna-claim-assistant.zip \
+            dist/cigna-claim-assistant-utools.upx \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG_NAME" \
+            --notes-file release-notes.md
