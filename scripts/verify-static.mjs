@@ -96,6 +96,8 @@ assert.match(readme, /npm run verify:static/);
 assert.match(readme, /不会启动本机 Chrome/);
 
 const verifyRelease = await readText("scripts/verify-release.mjs");
+assert.match(verifyRelease, /ALLOW_LOCAL_BROWSER_VERIFY/);
+assert.match(verifyRelease, /verify:static/);
 assert.match(verifyRelease, /extension:test:zip:load/);
 assert.match(verifyRelease, /utools:test:renderer/);
 

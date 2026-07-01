@@ -1,6 +1,16 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
 
+if (process.env.CI !== "true" && process.env.ALLOW_LOCAL_BROWSER_VERIFY !== "1") {
+  console.error([
+    "[verify:release] Refusing to run full browser verification on this local machine.",
+    "[verify:release] This command may launch Playwright/Chromium and disturb the user's active Chrome session.",
+    "[verify:release] Use `npm run verify:static` for local no-browser checks.",
+    "[verify:release] To intentionally run the full suite locally, use `ALLOW_LOCAL_BROWSER_VERIFY=1 npm run verify:release`.",
+  ].join("\n"));
+  process.exit(2);
+}
+
 const commands = [
   ["claims:test", "PDF识别、分组、防重、治疗日期规则"],
   ["claims:test:core-sync", "CLI 和 Chrome 扩展核心逻辑同步"],

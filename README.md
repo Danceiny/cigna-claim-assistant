@@ -228,7 +228,7 @@ npm run verify:static
 npm run verify:release
 ```
 
-它会顺序覆盖核心识别、CLI/helper、PDF 压缩、mock Cigna 提交、Chrome popup/background/manifest、release 打包、打包后 Chrome 扩展加载、uTools `.upx` 审计、uTools 页面 smoke、release helper 解包运行和 release 解压后用户侧入口冒烟验证。其中扩展加载和页面 smoke 可能启动 Playwright/Chromium，本机浏览器不能被打扰时不要运行。解压后的 release 包只保留用户侧 helper 命令，完整 release 验证入口保留在源码仓库。
+它会顺序覆盖核心识别、CLI/helper、PDF 压缩、mock Cigna 提交、Chrome popup/background/manifest、release 打包、打包后 Chrome 扩展加载、uTools `.upx` 审计、uTools 页面 smoke、release helper 解包运行和 release 解压后用户侧入口冒烟验证。其中扩展加载和页面 smoke 可能启动 Playwright/Chromium。本机默认拒绝运行这个完整入口，以免影响当前 Chrome；确实要在本机跑时必须显式执行 `ALLOW_LOCAL_BROWSER_VERIFY=1 npm run verify:release`。解压后的 release 包只保留用户侧 helper 命令，完整 release 验证入口保留在源码仓库。
 
 也可以按需单独运行：
 
