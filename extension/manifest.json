@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Cigna Claim Assistant",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "本地识别报销 PDF，按天分组并在已登录的 Cigna 页面自动提交理赔。",
   "permissions": ["storage", "activeTab", "scripting", "tabs", "sidePanel"],
   "host_permissions": ["https://customer.cignaenvoy.com/*"],
