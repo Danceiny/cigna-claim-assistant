@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Cigna Mock</title>
+    <style>
+      body { font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 40px; }
+      main { max-width: 680px; margin: auto; border: 1px solid #ddd; padding: 24px; border-radius: 8px; }
+      button, input, [role="option"] { margin: 8px; padding: 8px 12px; }
+      [role="option"] { border: 1px solid #ccc; display: inline-block; cursor: pointer; }
+      .beneficiary-card { border: 1px solid #bbb; padding: 18px; cursor: pointer; width: 260px; }
+      .hidden { display: none; }
+      [role="grid"] { display: grid; grid-template-columns: repeat(7, 42px); gap: 4px; }
+      [role="gridcell"] { border: 1px solid #ccc; padding: 8px; text-align: center; cursor: pointer; }
+      .modal { border: 1px solid #aaa; padding: 16px; background: #fafafa; margin-top: 16px; }
+    </style>
+  </head>
+  <body>
+    <main id="app"></main>
+    <script>
+      const state = {
+        step: "beneficiary",
+        country: "",
+        type: "",
+        visit: "",
+        date: "",
+        diagnosis: "",
+        uploaded: [],
+        uploadModal: "",
+        confirmModal: false,
+        payment: "",
+        agreed: false,
+        submitted: false,
+        hideSubmissionId: new URLSearchParams(location.search).has("hideSubmissionId"),
+        alternateUploadText: new URLSearchParams(location.search).has("alternateUploadText"),
+      };
+      window.__cignaMockState = state;
+
+      const app = document.querySelector("#app");
+      render();
+
+      function render() {
+        app.innerHTML = "";
+        if (state.submitted) {
+          app.innerHTML = `
+            <h1>理赔已提交</h1>
+            ${state.hideSubmissionId ? "" : "<div>提交 ID：99900123</div>"}
+            <button onclick="state.submitted=false; state.step='beneficiary'; render()">新理赔</button>
+            <button>查看理赔</button>
+          `;
+          return;
+        }
+        if (state.step === "beneficiary") {
+          app.innerHTML = `
+            <h1>您为谁理赔？</h1>
+            <button class="beneficiary-card" onclick="state.step='country'; render()">员工 会员 <strong>TEST BENEFICIARY</strong> 1996/05/05</button>
+          `;
+          return;
+        }
+        if (state.step === "country") {
+          comboPage("您在哪里接受治疗？", "选择国家/地区*", "阿拉伯联合酋长国", "country", "type");
+          return;
+        }
+        if (state.step === "type") {
+          comboPage("告诉我们有关理赔的更多信息", "理赔类型*", "医疗类", "type", "visit");
+          return;
+        }
+        if (state.step === "visit") {
+          app.innerHTML = `
+            <h1>告诉我们有关理赔的更多信息</h1>
+            <input role="combobox" aria-label="是门诊还是住院？*" value="${state.visit}" oninput="showOption('门诊','visit')" onclick="showOption('门诊','visit')">
+            <div id="option-host"></div>
+            <input role="textbox" aria-label="*最早治疗日期是什么时候？" value="${state.date}" readonly>
+            <button aria-label="*最早治疗日期是什么时候？" onclick="showDatePicker()">📅</button>
+            <div id="date-host"></div>
+            <button ${state.visit && state.date ? "" : "disabled"} onclick="state.step='diagnosis'; render()">继续</button>
+          `;
+          return;
+        }
+        if (state.step === "diagnosis") {
+          app.innerHTML = `
+            <h1>您的诊断是什么？</h1>
+            <input role="textbox" aria-label="描述您的诊断 *" value="${state.diagnosis}" oninput="state.diagnosis=this.value; render()">
+            <label><input type="checkbox"> 该理赔是由工伤事故或工伤所致</label>
+            <button ${state.diagnosis ? "" : "disabled"} onclick="state.step='insurance'; render()">继续</button>
+          `;
+          return;
+        }
+        if (state.step === "insurance") {
+          app.innerHTML = `
+            <h1>另一家保险公司是否可对全部或部分理赔负责？</h1>
+            <button>是</button>
+            <button onclick="state.step='upload'; render()">否</button>
+          `;
+          return;
+        }
+        if (state.step === "upload") {
+          app.innerHTML = `
+            <h1>请上传所有文件</h1>
+            <input type="file" onchange="handleFileUpload(this.files)">
+            <h2>您上传的文件</h2>
+            <ul>${state.uploaded.map((name) => `<li>${name}</li>`).join("")}</ul>
+            <button onclick="state.confirmModal=true; render()">继续</button>
+            ${state.uploadModal ? `<div class="modal"><div>${state.alternateUploadText ? `上传完成：${state.uploadModal}` : `${state.uploadModal} 上载完成`}</div><button onclick="state.uploadModal=''; render()">完成</button></div>` : ""}
+            ${state.confirmModal ? `<div class="modal"><h2>您已上传所需的文件了吗？</h2><button onclick="state.confirmModal=false; state.step='payment'; render()">是</button><button>否</button></div>` : ""}
+          `;
+          return;
+        }
+        if (state.step === "payment") {
+          app.innerHTML = `
+            <h1>最后，请确认您的付款详情</h1>
+            <label><input type="radio" name="payment" value="BANK 9999" onchange="state.payment=this.value; render()"> BANK 9999</label>
+            <label><input type="radio" name="payment" value="BANK 0001" onchange="state.payment=this.value; render()"> BANK 0001</label>
+            <button ${state.payment ? "" : "disabled"} onclick="state.step='review'; render()">继续</button>
+          `;
+          return;
+        }
+        if (state.step === "review") {
+          app.innerHTML = `
+            <h1>请检查并提交</h1>
+            <section>理赔详情 TEST BENEFICIARY 阿拉伯联合酋长国 门诊 ${state.date} ${state.diagnosis} ${state.uploaded.join(" ")}</section>
+            <label><input id="agree" type="checkbox" ${state.agreed ? "checked" : ""} onchange="state.agreed=this.checked; render()"> 我同意免责声明</label>
+            <button ${state.agreed ? "" : "disabled"} onclick="state.submitted=true; render()">提交</button>
+          `;
+        }
+      }
+
+      function comboPage(title, label, option, key, nextStep) {
+        app.innerHTML = `
+          <h1>${title}</h1>
+          <input role="combobox" aria-label="${label}" value="${state[key]}" oninput="showOption('${option}','${key}')" onclick="showOption('${option}','${key}')">
+          <div id="option-host"></div>
+          <button ${state[key] ? "" : "disabled"} onclick="state.step='${nextStep}'; render()">继续</button>
+        `;
+      }
+
+      function showOption(option, key) {
+        const host = document.querySelector("#option-host");
+        if (!host) return;
+        host.innerHTML = `<div role="option" onclick="state.${key}='${option}'; render()">${option}</div>`;
+      }
+
+      function showDatePicker(month = "六月") {
+        const host = document.querySelector("#date-host");
+        const days = month === "六月"
+          ? ["31", ...Array.from({ length: 30 }, (_, i) => String(i + 1)), ..."1234567891011".match(/1|2|3|4|5|6|7|8|9|10|11/g)]
+          : ["26", "27", "28", "29", "30", ...Array.from({ length: 31 }, (_, i) => String(i + 1)), "1", "2", "3", "4", "5", "6"];
+        host.innerHTML = `
+          <div role="dialog" aria-label="Date picker">
+            <button aria-label="Previous Month" onclick="showDatePicker('五月')">Previous Month</button>
+            <h2>${month}</h2>
+            <div role="grid" aria-label="${month}">
+              ${days.slice(0, 42).map((day) => `<div role="gridcell" onclick="pickDay('${month}', '${day}')">${day}</div>`).join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      function pickDay(month, day) {
+        const monthNo = month === "五月" ? "05" : "06";
+        state.date = `2026/${monthNo}/${String(day).padStart(2, "0")}`;
+        render();
+      }
+
+      function handleFileUpload(files) {
+        const file = files[0];
+        state.uploaded.push(file.name);
+        state.uploadModal = file.name;
+        render();
+      }
+    </script>
+  </body>
+</html>

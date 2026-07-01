@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cigna Claim Assistant</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Cigna Claim Assistant</h1>
+        <p>uTools 桌面入口：扫描 PDF、生成计划、打开 Chrome 扩展提交。</p>
+      </header>
+
+      <section class="settings">
+        <label>
+          被保险人姓名
+          <input id="beneficiaryName" placeholder="与 Cigna 页面卡片一致">
+        </label>
+        <label>
+          报销理由
+          <input id="diagnosis" placeholder="例如 BACK_PAIN">
+        </label>
+        <label>
+          治疗国家/地区
+          <input id="country" value="阿拉伯联合酋长国">
+        </label>
+        <label>
+          理赔类型
+          <input id="claimType" value="医疗类">
+        </label>
+        <label>
+          就诊类型
+          <input id="visitType" value="门诊">
+        </label>
+        <label>
+          付款账户关键词
+          <input id="paymentLabel" placeholder="例如 BANK 0001">
+        </label>
+        <label>
+          最早提交服务日期
+          <input id="minServiceDate" type="date">
+        </label>
+        <label>
+          长期病症最早治疗日期
+          <input id="earliestDate" type="date">
+        </label>
+        <label>
+          报销目录
+          <input id="claimDir" placeholder="选择包含 PDF 的文件夹">
+        </label>
+        <label class="inline">
+          <input id="ocrEnabled" type="checkbox">
+          扫描时启用本机 OCR
+        </label>
+        <label class="inline">
+          <input id="compressEnabled" type="checkbox">
+          扫描时压缩超限 PDF
+        </label>
+        <label>
+          OCR 命令
+          <input id="ocrCommand" placeholder="可留空使用 tesseract，或填写 OCR wrapper 路径">
+        </label>
+      </section>
+
+      <section id="settingsStatus" class="settings-status"></section>
+
+      <section id="dropzone" class="dropzone">
+        <strong>拖入报销文件夹或 PDF</strong>
+        <span>拖入文件夹会扫描该目录；拖入单个 PDF 会使用它所在目录。</span>
+      </section>
+
+      <section class="actions">
+        <button id="chooseDir">选择文件夹</button>
+        <button id="scanDir">扫描并导出计划</button>
+        <button id="exportChromeBackup">导出 Chrome 设置</button>
+        <button id="openChromeSubmit">打开 Cigna</button>
+        <button id="openReleaseFolder">打开发布包目录</button>
+      </section>
+
+      <section class="note">
+        uTools 形态负责桌面收件、扫描和计划审计；真实提交依赖已登录的 Chrome 扩展，以复用 Cigna 登录态和页面脚本。
+      </section>
+
+      <pre id="log"></pre>
+    </main>
+    <script src="renderer.js"></script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+outputs/
+work/
+.omx/
+.DS_Store
+*.log
+*.tmp
+*.zip
+*.upx
+*.pdf
+*.pdf.txt
+*.env
+*.local
+*.sqlite
+*.sqlite3

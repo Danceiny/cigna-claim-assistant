@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cigna Claim Assistant Start</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #172033;
+        background: #f6f8fb;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 32px 20px 48px;
+      }
+      header {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      header img {
+        width: 64px;
+        height: 64px;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 28px;
+        line-height: 1.2;
+      }
+      p {
+        margin: 0;
+        line-height: 1.55;
+      }
+      section {
+        background: #fff;
+        border: 1px solid #d8e0ea;
+        border-radius: 8px;
+        padding: 18px 20px;
+        margin: 14px 0;
+      }
+      h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+      ol, ul {
+        margin: 0;
+        padding-left: 22px;
+      }
+      li {
+        margin: 8px 0;
+        line-height: 1.5;
+      }
+      code {
+        background: #eef3f8;
+        border-radius: 4px;
+        padding: 2px 5px;
+      }
+      a {
+        color: #0f766e;
+        font-weight: 600;
+      }
+      .warning {
+        border-color: #f4c27a;
+        background: #fff8eb;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <img src="extension/icons/icon-128.png" alt="Cigna Claim Assistant">
+        <div>
+          <h1>Cigna Claim Assistant</h1>
+          <p>本地识别 PDF/图片，按服务日期一天一单，在已登录的 Cigna 页面提交。</p>
+        </div>
+      </header>
+
+      <section class="warning">
+        <h2>使用前确认</h2>
+        <ul>
+          <li>必须安装到你平时登录 Cigna 的 Chrome，不要用临时 Chrome profile。</li>
+          <li>真实提交前先点扩展里的 <code>检查 Cigna 页面</code> 和 <code>提交预检</code>。</li>
+          <li>日期由扩展在 Cigna 日期选择器里点击，不会手动输入。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>安装</h2>
+        <ol>
+          <li>macOS 上可先双击 <code>OPEN_INSTALLER.command</code>；它会打开本页、Chrome 扩展管理页，并把 <code>extension</code> 文件夹路径复制到剪贴板。</li>
+          <li>打开 Chrome 的 <a href="chrome://extensions">chrome://extensions</a>。</li>
+          <li>打开右上角 <code>Developer mode</code>。</li>
+          <li>点击 <code>Load unpacked</code>。</li>
+          <li>选择当前解压目录里的 <code>extension</code> 文件夹。</li>
+          <li>在同一个 Chrome 里登录 Cigna Envoy。</li>
+          <li>可选：在 uTools 中导入 <code>cigna-claim-assistant-utools.upx</code>，作为可选择或拖入报销目录的桌面扫描和计划导出入口；uTools 可导出 Chrome 扩展可导入的设置备份。</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>产品形态</h2>
+        <ul>
+          <li>Chrome 插件负责复用已登录 Cigna 页面并执行真实提交。</li>
+          <li>uTools 插件负责桌面拖入目录、本地扫描、OCR/压缩计划和导出 Chrome 设置备份。</li>
+          <li>release zip 只是总交付包，不是第三种产品形态。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>推荐流程</h2>
+        <ol>
+          <li>打开 Cigna 中文提交页，点击扩展图标。</li>
+          <li>确认被保险人、报销理由、治疗国家/地区、理赔类型、就诊类型、付款账户关键词和最早治疗日期；报销理由没有内置默认值。</li>
+          <li>拖入报销 PDF 文件夹；同名 <code>.txt</code> OCR 文本可一起拖入，只用于识别，不会上传。</li>
+          <li>点击 <code>识别文件</code>，检查 <code>将提交 / 将跳过 / 需压缩</code>。</li>
+          <li>如果 <code>需压缩</code> 不为 0，先点击 <code>压缩 PDF</code>。</li>
+          <li>点击 <code>提交预检</code>，确认日期、字段、附件名、大小和 hash。</li>
+          <li>确认无误后点击 <code>自动处理并提交</code>。</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>防重防漏</h2>
+        <div class="grid">
+          <ul>
+            <li>只有发票/收据会阻塞。</li>
+            <li>只有医疗/理赔表但没有发票/收据会阻塞。</li>
+            <li>无法识别服务日期会阻塞。</li>
+          </ul>
+          <ul>
+            <li>同一文件 hash 会跳过。</li>
+            <li>提交成功日期会进入本地账本。</li>
+            <li>超 6 MB PDF 或单日总附件超限会先压缩。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>更多说明</h2>
+        <ul>
+          <li><a href="INSTALL.zh-CN.md">INSTALL.zh-CN.md</a>：完整中文安装和使用清单。</li>
+          <li><a href="VERIFICATION.md">VERIFICATION.md</a>：验收证据和真实 Cigna 上线前检查。</li>
+          <li><a href="README.md">README.md</a>：功能、CLI 和开发验证命令。</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

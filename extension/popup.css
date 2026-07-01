@@ -1,0 +1,279 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 440px;
+  margin: 0;
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
+  background: #f7f8fb;
+}
+
+main {
+  padding: 14px;
+}
+
+body.assistant-page {
+  width: auto;
+}
+
+body.assistant-page main {
+  max-width: 100%;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+p {
+  margin: 0;
+  color: #667085;
+}
+
+.settings {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.settings-status {
+  margin-top: 10px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+  color: #475467;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.settings-status.ready {
+  border-color: #9fd6b5;
+  background: #effaf3;
+  color: #0f6b3b;
+}
+
+.settings-status.missing {
+  border-color: #f4c27a;
+  background: #fff8eb;
+  color: #8a4b00;
+}
+
+.ledger-status {
+  margin-top: 8px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+  color: #475467;
+  overflow-wrap: anywhere;
+}
+
+label {
+  display: grid;
+  gap: 5px;
+  font-weight: 600;
+}
+
+label.inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+label.inline input {
+  width: auto;
+}
+
+input {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px;
+  font: inherit;
+  background: #fff;
+}
+
+select {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px;
+  font: inherit;
+  background: #fff;
+  min-width: 0;
+}
+
+.dropzone {
+  margin: 14px 0;
+  min-height: 92px;
+  border: 1.5px dashed #8aa3c7;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: #184b86;
+  cursor: pointer;
+}
+
+.dropzone.dragging {
+  border-color: #0b67b2;
+  background: #eef6ff;
+}
+
+.dropzone input {
+  display: none;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+button {
+  border: 0;
+  border-radius: 6px;
+  padding: 9px 12px;
+  background: #0b67b2;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 0;
+}
+
+button:disabled {
+  background: #c8d2df;
+  cursor: default;
+}
+
+.summary,
+.log,
+.claims {
+  margin-top: 12px;
+}
+
+.summary {
+  white-space: pre-wrap;
+}
+
+.claim {
+  border: 1px solid #dde3eb;
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 8px;
+  background: #fff;
+}
+
+.claim header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 800;
+}
+
+.file-override {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 6px;
+  align-items: start;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #edf1f6;
+}
+
+.file-override label {
+  gap: 3px;
+  font-size: 11px;
+  color: #475467;
+}
+
+.file-override input,
+.file-override select {
+  width: 100%;
+  padding: 6px;
+  font-size: 12px;
+}
+
+.file-name {
+  grid-column: 2;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+  color: #344054;
+}
+
+.file-remove {
+  grid-column: 2;
+  justify-self: start;
+  padding: 4px 8px;
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  color: #475467;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.file-override label {
+  grid-column: 2;
+}
+
+.file-thumb {
+  grid-row: span 4;
+  width: 52px;
+  height: 66px;
+  object-fit: contain;
+  border: 1px solid #d8e0ea;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.file-thumb-empty {
+  display: grid;
+  place-items: center;
+  color: #98a2b3;
+  font-size: 11px;
+  text-align: center;
+}
+
+.status-ready {
+  color: #0f8a4b;
+}
+
+.status-review {
+  color: #a16207;
+}
+
+.status-blocked {
+  color: #b42318;
+}
+
+ul {
+  padding-left: 18px;
+  margin: 6px 0 0;
+}
+
+.log {
+  color: #475467;
+  white-space: pre-wrap;
+}
+
+@media (min-width: 760px) {
+  body.assistant-page main {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  body.assistant-page .settings {
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+  }
+
+  body.assistant-page .actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

@@ -1,0 +1,248 @@
+#!/usr/bin/env node
+import assert from "node:assert/strict";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { spawn } from "node:child_process";
+import { chromium } from "playwright";
+
+const root = process.cwd();
+const packagePath = join(root, "dist", "cigna-claim-assistant-utools.upx");
+const info = await stat(packagePath).catch(() => null);
+assert.equal(Boolean(info?.isFile()), true, "uTools package is missing");
+assert.equal(info.size > 1_000_000, true, "uTools package is unexpectedly small");
+
+const listing = await run("unzip", ["-Z1", packagePath]);
+for (const file of [
+  "plugin.json",
+  "index.html",
+  "preload.js",
+  "renderer.js",
+  "logo.png",
+  "scripts/scan-claims.mjs",
+  "src/core/claimIntake.mjs",
+  "node_modules/pdfjs-dist/package.json",
+  "node_modules/pdf-lib/package.json",
+]) {
+  assert.match(listing, new RegExp(escapeRegExp(file)));
+}
+
+const pluginJson = JSON.parse(await run("unzip", ["-p", packagePath, "plugin.json"]));
+assert.equal(pluginJson.pluginName, "Cigna Claim Assistant");
+assert.equal(pluginJson.main, "index.html");
+assert.equal(pluginJson.preload, "preload.js");
+assert.equal(pluginJson.features[0].code, "cigna-claim-assistant");
+
+const preload = await run("unzip", ["-p", packagePath, "preload.js"]);
+const indexHtml = await run("unzip", ["-p", packagePath, "index.html"]);
+const renderer = await run("unzip", ["-p", packagePath, "renderer.js"]);
+assert.match(preload, /scanDirectory/);
+assert.match(preload, /ocrEnabled/);
+assert.match(preload, /compressEnabled/);
+assert.match(preload, /--compress/);
+assert.match(preload, /--ocr-command/);
+assert.match(preload, /loadSettings/);
+assert.match(preload, /saveSettings/);
+assert.match(preload, /exportChromeBackup/);
+assert.match(preload, /directoryFromDrop/);
+assert.match(preload, /scan-claims\.mjs/);
+assert.match(preload, /shellOpenExternal/);
+assert.match(preload, /new-submitclaim/);
+assert.match(indexHtml, /id="settingsStatus"/);
+assert.match(renderer, /renderSettingsStatus/);
+assert.match(renderer, /missingRequiredSettings/);
+assert.match(renderer, /请先填写必填设置/);
+
+const tmp = await mkdtemp(join(tmpdir(), "cigna-utools-package-"));
+try {
+  await run("unzip", ["-q", packagePath, "-d", tmp]);
+  const scanScript = join(tmp, "scripts", "scan-claims.mjs");
+  const emptyDir = join(tmp, "empty");
+  const planPath = join(tmp, "plan.json");
+  await mkdir(emptyDir);
+  await run(process.execPath, [scanScript, "--dir", emptyDir, "--output", planPath]);
+  const plan = JSON.parse(await readFile(planPath, "utf8"));
+  assert.equal(plan.claims.length, 0);
+  const preloadSmoke = join(tmp, "preload-smoke.cjs");
+  await writeFile(preloadSmoke, `
+global.window = {};
+let storedSettings = null;
+let openedUrl = "";
+global.utools = {
+  dbStorage: {
+    getItem() { return storedSettings; },
+    setItem(key, value) { storedSettings = value; }
+  },
+  showOpenDialog() { return [${JSON.stringify(emptyDir)}]; },
+  shellOpenExternal(url) { openedUrl = url; }
+};
+require("./preload.js");
+(async () => {
+  const picked = window.cignaAssistant.chooseDirectory();
+  if (picked !== ${JSON.stringify(emptyDir)}) throw new Error("chooseDirectory did not return the mocked directory");
+  const blank = window.cignaAssistant.saveSettings({ claimDir: picked });
+  if (blank.diagnosis !== "") throw new Error("blank uTools settings should not inject a default diagnosis");
+  const saved = window.cignaAssistant.saveSettings({
+    beneficiaryName: "TEST USER",
+    diagnosis: "BACK_PAIN",
+    country: "阿拉伯联合酋长国",
+    claimType: "医疗类",
+    visitType: "门诊",
+    paymentLabel: "BANK 0001",
+    minServiceDate: "2026-05-08",
+    earliestDate: "2026-05-01",
+    claimDir: picked,
+    ocrEnabled: true,
+    compressEnabled: true,
+    ocrCommand: ${JSON.stringify(process.execPath)}
+  });
+  if (window.cignaAssistant.loadSettings().minServiceDate !== "2026-05-08") throw new Error("settings were not persisted");
+  const backup = window.cignaAssistant.exportChromeBackup(saved);
+  if (!backup.ok || backup.payload.schema !== "cigna-claim-assistant-backup-v1") throw new Error("backup export failed");
+  if (backup.payload.settings.beneficiaryName !== "TEST USER") throw new Error("backup beneficiary was not exported");
+  if (backup.payload.settings.paymentLabel !== "BANK 0001") throw new Error("backup payment label was not exported");
+  if (backup.payload.settings.ongoingConditionEarliestDate !== "2026-05-01") throw new Error("backup earliest date was not exported");
+  if (backup.payload.settings.autoSubmitOnSelect !== true) throw new Error("backup did not enable drop-to-submit mode");
+  const droppedDir = await window.cignaAssistant.directoryFromDrop({ dataTransfer: { files: [{ path: picked }] } });
+  if (droppedDir !== picked) throw new Error("directory drop did not return the dropped directory");
+  const result = await window.cignaAssistant.scanDirectory({ ...saved, dir: picked });
+  if (!result.ok) throw new Error(result.error || result.stderr || "scanDirectory failed");
+  const stored = window.cignaAssistant.loadSettings();
+  if (stored.ocrEnabled !== true) throw new Error("OCR setting was not persisted");
+  if (stored.compressEnabled !== true) throw new Error("compression setting was not persisted");
+  if (stored.ocrCommand !== ${JSON.stringify(process.execPath)}) throw new Error("OCR command was not persisted");
+  window.cignaAssistant.openChromeSubmit();
+  if (!openedUrl.includes("new-submitclaim")) throw new Error("Cigna URL was not opened");
+})().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
+`);
+  await run(process.execPath, [preloadSmoke], { cwd: tmp });
+  await runRendererSmoke(tmp);
+} finally {
+  await rm(tmp, { recursive: true, force: true });
+}
+
+console.log("uTools package test passed");
+
+function run(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd: options.cwd || root,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.on("close", (code) => {
+      const output = `${stdout}${stderr}`;
+      if (code === 0 || options.allowFailure) resolve(output);
+      else reject(new Error(`${command} ${args.join(" ")} exited ${code}\n${output}`));
+    });
+    child.on("error", reject);
+  });
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function runRendererSmoke(pluginRoot) {
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.addInitScript(() => {
+      window.__utoolsCalls = [];
+      window.cignaAssistant = {
+        loadSettings() {
+          return {
+            beneficiaryName: "PACKAGED USER",
+            diagnosis: "BACK_PAIN",
+            country: "阿拉伯联合酋长国",
+            claimType: "医疗类",
+            visitType: "门诊",
+            paymentLabel: "BANK 0001",
+            minServiceDate: "2026-05-08",
+            earliestDate: "2026-05-01",
+            claimDir: "/tmp/packaged-claims",
+            ocrEnabled: true,
+            compressEnabled: true,
+            ocrCommand: "/usr/local/bin/ocr-wrapper",
+          };
+        },
+        saveSettings(settings) {
+          window.__utoolsCalls.push({ type: "saveSettings", settings });
+          return settings;
+        },
+        chooseDirectory() {
+          window.__utoolsCalls.push({ type: "chooseDirectory" });
+          return "/tmp/packaged-selected";
+        },
+        async directoryFromDrop() {
+          window.__utoolsCalls.push({ type: "directoryFromDrop" });
+          return "/tmp/packaged-dropped";
+        },
+        async scanDirectory(options) {
+          window.__utoolsCalls.push({ type: "scanDirectory", options });
+          return {
+            ok: true,
+            output: "/tmp/outputs/utools-claim-plan.json",
+            stdout: "Ready: 1, review: 0, blocked: 0, duplicates: 0",
+          };
+        },
+        exportChromeBackup(settings) {
+          window.__utoolsCalls.push({ type: "exportChromeBackup", settings });
+          return { ok: true, output: "/tmp/outputs/cigna-claim-assistant-chrome-settings-backup.json" };
+        },
+        openChromeSubmit() {
+          window.__utoolsCalls.push({ type: "openChromeSubmit" });
+        },
+        openReleaseFolder() {
+          window.__utoolsCalls.push({ type: "openReleaseFolder" });
+        },
+      };
+    });
+    await page.goto(pathToFileURL(join(pluginRoot, "index.html")).href);
+    await page.waitForSelector("#scanDir");
+    assert.equal(await page.locator("#beneficiaryName").inputValue(), "PACKAGED USER");
+    assert.equal(await page.locator("#paymentLabel").inputValue(), "BANK 0001");
+    assert.match(await page.locator("#settingsStatus").innerText(), /已就绪/);
+    await page.locator("#paymentLabel").fill("");
+    await page.locator("#paymentLabel").dispatchEvent("change");
+    assert.match(await page.locator("#settingsStatus").innerText(), /缺少: 付款账户关键词/);
+    await page.locator("#exportChromeBackup").click();
+    assert.match(await page.locator("#log").innerText(), /请先填写必填设置: 付款账户关键词/);
+    let calls = await page.evaluate(() => window.__utoolsCalls);
+    assert.equal(calls.some((call) => call.type === "exportChromeBackup"), false);
+    await page.locator("#paymentLabel").fill("BANK 0001");
+    await page.locator("#paymentLabel").dispatchEvent("change");
+    assert.match(await page.locator("#settingsStatus").innerText(), /已就绪/);
+    await page.locator("#chooseDir").click();
+    assert.equal(await page.locator("#claimDir").inputValue(), "/tmp/packaged-selected");
+    await page.evaluate(() => {
+      const event = new Event("drop", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "dataTransfer", { value: { files: [{ path: "/tmp/packaged-dropped" }] } });
+      document.querySelector("#dropzone").dispatchEvent(event);
+    });
+    assert.equal(await page.locator("#claimDir").inputValue(), "/tmp/packaged-dropped");
+    await page.locator("#scanDir").click();
+    await page.waitForFunction(() => document.querySelector("#log")?.textContent.includes("扫描完成"));
+    await page.locator("#exportChromeBackup").click();
+    assert.match(await page.locator("#log").innerText(), /cigna-claim-assistant-chrome-settings-backup\.json/);
+    await page.locator("#openChromeSubmit").click();
+    await page.locator("#openReleaseFolder").click();
+    calls = await page.evaluate(() => window.__utoolsCalls);
+    assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.claimDir === undefined && call.options.dir === "/tmp/packaged-dropped" && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
+    assert.equal(calls.some((call) => call.type === "exportChromeBackup" && call.settings.beneficiaryName === "PACKAGED USER"), true);
+  } finally {
+    await browser?.close();
+  }
+}

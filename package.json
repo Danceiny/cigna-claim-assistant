@@ -1,0 +1,47 @@
+{
+  "name": "cigna-claim-assistant",
+  "version": "0.1.0",
+  "description": "Local Chrome extension and uTools companion for Cigna claim intake, PDF recognition, compression, and duplicate-safe submission planning.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Danceiny/cigna-claim-assistant.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Danceiny/cigna-claim-assistant/issues"
+  },
+  "homepage": "https://github.com/Danceiny/cigna-claim-assistant#readme",
+  "scripts": {
+    "claims:scan": "node scripts/scan-claims.mjs",
+    "claims:ocr-sidecars": "node scripts/generate-ocr-sidecars.mjs",
+    "claims:test": "node scripts/test-claim-intake.mjs",
+    "claims:test:core-sync": "node scripts/test-core-sync.mjs",
+    "claims:test:helper": "node scripts/test-helper-package.mjs",
+    "claims:test:scan": "node scripts/test-scan-claims-cli.mjs",
+    "claims:test:compress": "node scripts/test-pdf-compress.mjs",
+    "claims:test:e2e": "node scripts/test-cigna-submit-mock.mjs",
+    "extension:test:background": "node scripts/test-background-worker.mjs",
+    "extension:test:popup": "node scripts/test-popup-smoke.mjs",
+    "extension:test:manifest": "node scripts/test-extension-manifest.mjs",
+    "extension:test:load": "node scripts/test-extension-load.mjs",
+    "extension:test:load:headed": "EXTENSION_LOAD_HEADED=1 node scripts/test-extension-load.mjs",
+    "extension:test:zip:load": "node scripts/test-extension-zip-load.mjs",
+    "extension:test:release": "node scripts/test-release-package.mjs",
+    "extension:test:release-helper": "node scripts/test-release-helper-package.mjs",
+    "extension:test:release-user-smoke": "node scripts/test-release-user-smoke.mjs",
+    "utools:test:package": "node scripts/test-utools-package.mjs",
+    "utools:test:renderer": "node scripts/test-utools-renderer.mjs",
+    "extension:icons": "node scripts/generate-icons.mjs",
+    "extension:package": "node scripts/package-extension.mjs",
+    "utools:package": "node scripts/package-utools.mjs",
+    "extension:release": "node scripts/package-release.mjs",
+    "verify:release": "node scripts/verify-release.mjs"
+  },
+  "dependencies": {
+    "chrome-remote-interface": "^0.33.3",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38",
+    "playwright": "^1.55.1"
+  }
+}
