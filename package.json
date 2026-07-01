@@ -1,6 +1,6 @@
 {
   "name": "cigna-claim-assistant",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Local Chrome extension and uTools companion for Cigna claim intake, PDF recognition, compression, and duplicate-safe submission planning.",
   "type": "module",
   "license": "MIT",
