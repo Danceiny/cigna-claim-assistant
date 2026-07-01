@@ -163,6 +163,34 @@ try {
   const defaultOutputPlan = JSON.parse(await readFile(join(cleanCwd, "outputs", "cigna-claim-plan.json"), "utf8"));
   assert.equal(defaultOutputPlan.claims.length, 1);
 
+  const exactFilesDir = join(inputDir, "exact-files");
+  await mkdir(exactFilesDir, { recursive: true });
+  await writeFile(join(exactFilesDir, "picked-medical.pdf"), blankPdf);
+  await writeFile(join(exactFilesDir, "picked-invoice.pdf"), blankPdf);
+  await writeFile(join(exactFilesDir, "ignored-medical.pdf"), blankPdf);
+  await writeFile(join(exactFilesDir, "picked-medical.pdf.txt"), "Cigna claim form. Treatment Date 18/05/2026. Diagnosis lower back pain.");
+  await writeFile(join(exactFilesDir, "picked-invoice.pdf.txt"), "Tax Invoice. Invoice Date 18/05/2026.");
+  await writeFile(join(exactFilesDir, "ignored-medical.pdf.txt"), "Cigna claim form. Treatment Date 19/05/2026. Diagnosis lower back pain.");
+  const exactFilesOutputPath = join(tmp, "exact-files-plan.json");
+  await run(process.execPath, [
+    "scripts/scan-claims.mjs",
+    "--file",
+    join(exactFilesDir, "picked-medical.pdf"),
+    "--file",
+    join(exactFilesDir, "picked-invoice.pdf"),
+    "--output",
+    exactFilesOutputPath,
+    "--earliest",
+    "2026-05-05",
+  ]);
+  const exactFilesPlan = JSON.parse(await readFile(exactFilesOutputPath, "utf8"));
+  assert.equal(exactFilesPlan.claims.length, 1);
+  assert.equal(exactFilesPlan.claims[0].serviceDate, "2026-05-18");
+  assert.deepEqual(exactFilesPlan.claims[0].files.map((file) => file.relativePath).sort(), [
+    "picked-invoice.pdf",
+    "picked-medical.pdf",
+  ]);
+
   console.log("scan claims CLI test passed");
 } finally {
   await rm(tmp, { recursive: true, force: true });

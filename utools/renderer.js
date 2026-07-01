@@ -17,6 +17,8 @@ const logEl = document.querySelector("#log");
 const dropzoneEl = document.querySelector("#dropzone");
 const settingsStatusEl = document.querySelector("#settingsStatus");
 const savedSettings = window.cignaAssistant.loadSettings();
+let selectedFilePaths = [];
+let selectedInputDir = "";
 const requiredSettings = [
   ["beneficiaryName", "被保险人姓名"],
   ["diagnosis", "报销理由"],
@@ -47,6 +49,8 @@ renderSettingsStatus();
 document.querySelector("#chooseDir").addEventListener("click", () => {
   const dir = window.cignaAssistant.chooseDirectory();
   if (dir) {
+    selectedFilePaths = [];
+    selectedInputDir = dir;
     fields.claimDir.value = dir;
     saveSettings();
   }
@@ -64,20 +68,27 @@ dropzoneEl.addEventListener("dragleave", () => {
 dropzoneEl.addEventListener("drop", async (event) => {
   event.preventDefault();
   dropzoneEl.classList.remove("dragging");
-  const dir = await window.cignaAssistant.directoryFromDrop(event);
-  if (!dir) {
+  const input = window.cignaAssistant.inputFromDrop
+    ? await window.cignaAssistant.inputFromDrop(event)
+    : { dir: await window.cignaAssistant.directoryFromDrop(event), filePaths: [] };
+  if (!input.dir && !input.filePaths?.length) {
     log("未找到可扫描的本地文件夹或 PDF。");
     return;
   }
-  fields.claimDir.value = dir;
+  selectedFilePaths = input.filePaths || [];
+  selectedInputDir = input.dir || "";
+  fields.claimDir.value = input.label || input.dir;
   saveSettings();
-  log(`已选择报销目录:\n${dir}`);
+  log(selectedFilePaths.length
+    ? `已选择 ${selectedFilePaths.length} 个文件:\n${selectedFilePaths.join("\n")}`
+    : `已选择报销目录:\n${input.dir}`);
 });
 
 document.querySelector("#scanDir").addEventListener("click", async () => {
   log("正在扫描目录...");
   const result = await window.cignaAssistant.scanDirectory({
-    dir: fields.claimDir.value.trim(),
+    dir: selectedFilePaths.length ? selectedInputDir : fields.claimDir.value.trim(),
+    filePaths: selectedFilePaths,
     beneficiaryName: fields.beneficiaryName.value.trim(),
     diagnosis: fields.diagnosis.value.trim(),
     country: fields.country.value.trim(),
@@ -140,7 +151,7 @@ function readSettings() {
     paymentLabel: fields.paymentLabel.value.trim(),
     minServiceDate: fields.minServiceDate.value,
     earliestDate: fields.earliestDate.value,
-    claimDir: fields.claimDir.value.trim(),
+    claimDir: selectedFilePaths.length ? selectedInputDir : fields.claimDir.value.trim(),
     ocrEnabled: fields.ocrEnabled.checked,
     compressEnabled: fields.compressEnabled.checked,
     ocrCommand: fields.ocrCommand.value.trim(),

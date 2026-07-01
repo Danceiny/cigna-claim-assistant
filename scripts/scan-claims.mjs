@@ -11,7 +11,8 @@ const PDFJS = await import("pdfjs-dist/legacy/build/pdf.mjs");
 PDFJS.GlobalWorkerOptions.workerSrc = new URL("../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs", import.meta.url).toString();
 
 const args = parseArgs(process.argv.slice(2));
-const inputDir = args.dir || "/Users/bytedance/Documents/报销";
+const inputFiles = arrayArg(args.file);
+const inputDir = args.dir || (inputFiles.length ? "" : "/Users/bytedance/Documents/报销");
 const outputPath = args.output || "outputs/cigna-claim-plan.json";
 const doCompress = Boolean(args.compress);
 const doOcr = Boolean(args.ocr);
@@ -22,7 +23,7 @@ const settings = {
 };
 
 const records = [];
-for await (const entry of walkSupportedFiles(inputDir)) {
+for await (const entry of collectInputFiles({ inputDir, inputFiles })) {
   const path = entry.path;
   const info = await stat(path);
   records.push(await buildFileRecord(path, info, entry.relativePath));
@@ -74,6 +75,24 @@ async function* walkSupportedFiles(dir, root = dir) {
       relativePath: relative(root, path),
     };
   }
+}
+
+async function* collectInputFiles({ inputDir, inputFiles }) {
+  if (inputFiles.length) {
+    const entries = [];
+    for (const file of inputFiles) {
+      const info = await stat(file);
+      if (!info.isFile() || !/\.(pdf|png|jpe?g|gif|bmp)$/i.test(file)) continue;
+      entries.push({
+        path: file,
+        relativePath: basename(file),
+      });
+    }
+    entries.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+    for (const entry of entries) yield entry;
+    return;
+  }
+  yield* walkSupportedFiles(inputDir);
 }
 
 async function extractPdfText(bytes) {
@@ -174,14 +193,28 @@ function parseArgs(argv) {
     if (arg.startsWith("--")) {
       const key = arg.slice(2);
       const next = argv[i + 1];
-      if (!next || next.startsWith("--")) out[key] = true;
+      if (!next || next.startsWith("--")) appendArg(out, key, true);
       else {
-        out[key] = next;
+        appendArg(out, key, next);
         i += 1;
       }
     }
   }
   return out;
+}
+
+function appendArg(out, key, value) {
+  if (out[key] == null) {
+    out[key] = value;
+    return;
+  }
+  if (Array.isArray(out[key])) out[key].push(value);
+  else out[key] = [out[key], value];
+}
+
+function arrayArg(value) {
+  if (value == null || value === true) return [];
+  return Array.isArray(value) ? value : [value];
 }
 
 function run(command, commandArgs, options = {}) {

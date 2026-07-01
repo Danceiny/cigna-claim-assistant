@@ -45,6 +45,14 @@ try {
         window.__utoolsCalls.push({ type: "directoryFromDrop" });
         return "/tmp/dropped-claims";
       },
+      async inputFromDrop() {
+        window.__utoolsCalls.push({ type: "inputFromDrop" });
+        return {
+          dir: "/tmp",
+          filePaths: ["/tmp/drop-a.pdf", "/tmp/drop-b.pdf"],
+          label: "2 个文件: drop-a.pdf, drop-b.pdf",
+        };
+      },
       async scanDirectory(options) {
         window.__utoolsCalls.push({ type: "scanDirectory", options });
         return {
@@ -103,8 +111,8 @@ try {
     });
     document.querySelector("#dropzone").dispatchEvent(event);
   });
-  assert.equal(await page.locator("#claimDir").inputValue(), "/tmp/dropped-claims");
-  assert.match(await page.locator("#log").innerText(), /已选择报销目录/);
+  assert.equal(await page.locator("#claimDir").inputValue(), "2 个文件: drop-a.pdf, drop-b.pdf");
+  assert.match(await page.locator("#log").innerText(), /已选择 2 个文件/);
 
   await page.locator("#scanDir").click();
   await page.waitForFunction(() => document.querySelector("#log")?.textContent.includes("扫描完成"));
@@ -119,8 +127,8 @@ try {
 
   calls = await page.evaluate(() => window.__utoolsCalls);
   assert.equal(calls.some((call) => call.type === "chooseDirectory"), true);
-  assert.equal(calls.some((call) => call.type === "directoryFromDrop"), true);
-  assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.paymentLabel === "BANK 0001" && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
+  assert.equal(calls.some((call) => call.type === "inputFromDrop"), true);
+  assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.paymentLabel === "BANK 0001" && call.options.dir === "/tmp" && call.options.filePaths?.length === 2 && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
   assert.equal(calls.some((call) => call.type === "exportChromeBackup" && call.settings.beneficiaryName === "TEST USER"), true);
   assert.equal(calls.some((call) => call.type === "openChromeSubmit"), true);
   assert.equal(calls.some((call) => call.type === "openReleaseFolder"), true);

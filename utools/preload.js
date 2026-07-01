@@ -79,10 +79,35 @@ window.cignaAssistant = {
     }
     return "";
   },
+  async inputFromDrop(event) {
+    const files = Array.from(event?.dataTransfer?.files || []);
+    const paths = files.map((file) => file.path).filter(Boolean);
+    if (!paths.length) return { dir: "", filePaths: [], label: "" };
+    const filePaths = [];
+    for (const path of paths) {
+      try {
+        const info = require("fs").statSync(path);
+        if (info.isDirectory()) return { dir: path, filePaths: [], label: path };
+        if (info.isFile() && /\.(pdf|png|jpe?g|gif|bmp)$/i.test(path)) filePaths.push(path);
+      } catch {
+        // Ignore unreadable drop entries.
+      }
+    }
+    if (!filePaths.length) return { dir: "", filePaths: [], label: "" };
+    return {
+      dir: dirname(filePaths[0]),
+      filePaths,
+      label: `${filePaths.length} 个文件: ${filePaths.map((path) => require("path").basename(path)).join(", ")}`,
+    };
+  },
   async scanDirectory(options = {}) {
     const dir = options.dir || "";
-    if (!dir || !existsSync(dir)) {
-      return { ok: false, error: "请选择有效报销目录。" };
+    const filePaths = Array.isArray(options.filePaths) ? options.filePaths.filter(Boolean) : [];
+    if (filePaths.length) {
+      const missing = filePaths.find((path) => !existsSync(path));
+      if (missing) return { ok: false, error: `文件不存在: ${missing}` };
+    } else if (!dir || !existsSync(dir)) {
+      return { ok: false, error: "请选择有效报销目录或拖入 PDF/图片文件。" };
     }
     this.saveSettings({
       diagnosis: options.diagnosis,
@@ -102,10 +127,14 @@ window.cignaAssistant = {
     mkdirSync(join(releaseRoot, "outputs"), { recursive: true });
     const output = join(releaseRoot, "outputs", "utools-claim-plan.json");
     const args = [
-      "--dir", dir,
       "--output", output,
       "--diagnosis", options.diagnosis || "",
     ];
+    if (filePaths.length) {
+      for (const path of filePaths) args.push("--file", path);
+    } else {
+      args.push("--dir", dir);
+    }
     if (options.compressEnabled) args.push("--compress");
     if (options.minServiceDate) args.push("--min-service-date", options.minServiceDate);
     if (options.earliestDate) args.push("--earliest", options.earliestDate);

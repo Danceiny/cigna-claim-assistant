@@ -46,6 +46,8 @@ assert.match(preload, /loadSettings/);
 assert.match(preload, /saveSettings/);
 assert.match(preload, /exportChromeBackup/);
 assert.match(preload, /directoryFromDrop/);
+assert.match(preload, /inputFromDrop/);
+assert.match(preload, /--file/);
 assert.match(preload, /scan-claims\.mjs/);
 assert.match(preload, /shellOpenExternal/);
 assert.match(preload, /new-submitclaim/);
@@ -60,7 +62,9 @@ try {
   const scanScript = join(tmp, "scripts", "scan-claims.mjs");
   const emptyDir = join(tmp, "empty");
   const planPath = join(tmp, "plan.json");
+  const droppedPdfPath = join(tmp, "dropped.pdf");
   await mkdir(emptyDir);
+  await writeFile(droppedPdfPath, "%PDF-1.4\n");
   await run(process.execPath, [scanScript, "--dir", emptyDir, "--output", planPath]);
   const plan = JSON.parse(await readFile(planPath, "utf8"));
   assert.equal(plan.claims.length, 0);
@@ -106,6 +110,8 @@ require("./preload.js");
   if (backup.payload.settings.autoSubmitOnSelect !== true) throw new Error("backup did not enable drop-to-submit mode");
   const droppedDir = await window.cignaAssistant.directoryFromDrop({ dataTransfer: { files: [{ path: picked }] } });
   if (droppedDir !== picked) throw new Error("directory drop did not return the dropped directory");
+  const droppedFiles = await window.cignaAssistant.inputFromDrop({ dataTransfer: { files: [{ path: ${JSON.stringify(droppedPdfPath)} }] } });
+  if (droppedFiles.filePaths.length !== 1 || droppedFiles.filePaths[0] !== ${JSON.stringify(droppedPdfPath)}) throw new Error("file drop did not preserve exact file input");
   const result = await window.cignaAssistant.scanDirectory({ ...saved, dir: picked });
   if (!result.ok) throw new Error(result.error || result.stderr || "scanDirectory failed");
   const stored = window.cignaAssistant.loadSettings();
@@ -190,6 +196,14 @@ async function runRendererSmoke(pluginRoot) {
           window.__utoolsCalls.push({ type: "directoryFromDrop" });
           return "/tmp/packaged-dropped";
         },
+        async inputFromDrop() {
+          window.__utoolsCalls.push({ type: "inputFromDrop" });
+          return {
+            dir: "/tmp",
+            filePaths: ["/tmp/packaged-a.pdf", "/tmp/packaged-b.pdf"],
+            label: "2 个文件: packaged-a.pdf, packaged-b.pdf",
+          };
+        },
         async scanDirectory(options) {
           window.__utoolsCalls.push({ type: "scanDirectory", options });
           return {
@@ -232,7 +246,7 @@ async function runRendererSmoke(pluginRoot) {
       Object.defineProperty(event, "dataTransfer", { value: { files: [{ path: "/tmp/packaged-dropped" }] } });
       document.querySelector("#dropzone").dispatchEvent(event);
     });
-    assert.equal(await page.locator("#claimDir").inputValue(), "/tmp/packaged-dropped");
+    assert.equal(await page.locator("#claimDir").inputValue(), "2 个文件: packaged-a.pdf, packaged-b.pdf");
     await page.locator("#scanDir").click();
     await page.waitForFunction(() => document.querySelector("#log")?.textContent.includes("扫描完成"));
     await page.locator("#exportChromeBackup").click();
@@ -240,7 +254,7 @@ async function runRendererSmoke(pluginRoot) {
     await page.locator("#openChromeSubmit").click();
     await page.locator("#openReleaseFolder").click();
     calls = await page.evaluate(() => window.__utoolsCalls);
-    assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.claimDir === undefined && call.options.dir === "/tmp/packaged-dropped" && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
+    assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.claimDir === undefined && call.options.dir === "/tmp" && call.options.filePaths?.length === 2 && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
     assert.equal(calls.some((call) => call.type === "exportChromeBackup" && call.settings.beneficiaryName === "PACKAGED USER"), true);
   } finally {
     await browser?.close();
