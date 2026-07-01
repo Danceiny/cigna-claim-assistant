@@ -28,4 +28,4 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Verify release build
-        run: npm run verify:release
+        run: xvfb-run -a npm run verify:release
