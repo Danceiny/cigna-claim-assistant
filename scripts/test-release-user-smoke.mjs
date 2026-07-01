@@ -19,6 +19,7 @@ try {
   await assertFile(releaseRoot, "README.md");
   await assertFile(releaseRoot, "INSTALL.zh-CN.md");
   await assertFile(releaseRoot, "VERIFICATION.md");
+  await assertFile(releaseRoot, "ACCEPTANCE.zh-CN.md");
   await assertFile(releaseRoot, "OPEN_INSTALLER.command");
   await assertFile(releaseRoot, "extension/manifest.json");
   await assertFile(releaseRoot, "extension/icons/icon-128.png");
@@ -37,12 +38,16 @@ try {
   const install = await readFile(join(releaseRoot, "INSTALL.zh-CN.md"), "utf8");
   const readme = await readFile(join(releaseRoot, "README.md"), "utf8");
   const verification = await readFile(join(releaseRoot, "VERIFICATION.md"), "utf8");
+  const acceptance = await readFile(join(releaseRoot, "ACCEPTANCE.zh-CN.md"), "utf8");
   assert.match(install, /实际产品形态是 Chrome 插件和 uTools 插件/);
   assert.match(install, /Chrome 插件完成/);
   assert.match(readme, /release zip 只是把这两种形态/);
   assert.match(readme, /解压后的 release 包只保留用户侧 helper 命令/);
   assert.match(verification, /源码仓库一键 release 验证/);
   assert.match(verification, /未在真实登录态 Cigna Envoy/);
+  assert.match(acceptance, /验收矩阵/);
+  assert.match(acceptance, /真实 Cigna 最终验收清单/);
+  assert.match(acceptance, /release-manifest\.json/);
 
   const helperPackage = JSON.parse(await readFile(join(releaseRoot, "package.json"), "utf8"));
   assert.equal(helperPackage.scripts["claims:scan"], "node scripts/scan-claims.mjs");

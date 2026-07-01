@@ -155,7 +155,7 @@ npm install
 
 `提交预检` 会下载预检文件，包含即将提交到 Cigna 的日期、最早治疗日期来源、表单字段、附件上传顺序、附件名、大小、hash、`submissionFingerprint` 和本地账本记录摘要，但不包含 PDF/图片 base64 内容，也不会启动提交。实际提交消息、提交前批次快照和成功后的本地账本也会记录同一个 `submissionFingerprint`，用于核对提交的就是预检过的那批字段和附件。`导出计划` 会下载本次识别计划，包含 summary、可提交项、跳过项、blocked 项、压缩项、最早治疗日期来源、附件上传顺序、重复文件和最近一次提交快照。`导出记录` 会下载本地防重账本和最近提交状态。`导入记录` 会合并导出的账本，用于失败后恢复已成功日期；如果当前已选文件，会立即重新识别并阻塞已提交日期。`导出备份` 会下载基础设置、账本、最近提交状态、最近一次提交快照和最近一次 Cigna 诊断，适合重装扩展或换机器；`导入备份` 会恢复基础设置并合并账本，同时恢复最近诊断/快照。`清空记录` 只清除本地账本、最近提交状态和最后一次提交结果，不清除基础设置。
 
-面向日常使用的安装、压缩、防重防漏和失败恢复步骤见 `docs/INSTALL.zh-CN.md`。release 包内包含 Chrome 扩展、uTools `.upx`、可双击打开的 `START.html` 和 `OPEN_INSTALLER.command`。验收证据和真实 Cigna 上线前检查见 `docs/VERIFICATION.md`。
+面向日常使用的安装、压缩、防重防漏和失败恢复步骤见 `docs/INSTALL.zh-CN.md`。release 包内包含 Chrome 扩展、uTools `.upx`、可双击打开的 `START.html` 和 `OPEN_INSTALLER.command`。验收证据和真实 Cigna 上线前检查见 `docs/VERIFICATION.md`，需求到证据的逐项矩阵见 `docs/ACCEPTANCE.zh-CN.md`。
 
 ## 本地扫描
 

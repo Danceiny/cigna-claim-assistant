@@ -52,6 +52,7 @@ for (const file of [
   "README.md",
   "INSTALL.zh-CN.md",
   "VERIFICATION.md",
+  "ACCEPTANCE.zh-CN.md",
 ]) {
   assert.equal(files.has(`${releasePrefix}${file}`), true, `release missing ${file}`);
 }
@@ -249,6 +250,7 @@ const start = await unzip(["-p", releaseZip, `${releasePrefix}START.html`]);
 const installer = await unzip(["-p", releaseZip, `${releasePrefix}OPEN_INSTALLER.command`]);
 const install = await unzip(["-p", releaseZip, `${releasePrefix}INSTALL.zh-CN.md`]);
 const verification = await unzip(["-p", releaseZip, `${releasePrefix}VERIFICATION.md`]);
+const acceptance = await unzip(["-p", releaseZip, `${releasePrefix}ACCEPTANCE.zh-CN.md`]);
 assert.match(readme, /不会作为附件上传/);
 assert.match(readme, /claims:ocr-sidecars/);
 assert.match(readme, /真实 Cigna/);
@@ -257,6 +259,7 @@ assert.match(readme, /不是第三种产品形态/);
 assert.match(readme, /服务日期没有被当作最早治疗日期|不会拿服务日期冒充最早治疗日期/);
 assert.match(start, /Load unpacked/);
 assert.match(start, /提交预检/);
+assert.match(start, /ACCEPTANCE\.zh-CN\.md/);
 assert.match(start, /extension\/icons\/icon-128\.png/);
 assert.match(installer, /chrome:\/\/extensions/);
 assert.match(installer, /pbcopy/);
@@ -270,6 +273,11 @@ assert.match(install, /导出 Chrome 设置/);
 assert.match(install, /Chrome 自动提交设置未就绪/);
 assert.match(install, /cigna-claim-assistant-chrome-settings-backup\.json/);
 assert.match(verification, /未在真实登录态 Cigna Envoy/);
+assert.match(acceptance, /验收矩阵/);
+assert.match(acceptance, /Chrome MV3 扩展/);
+assert.match(acceptance, /uTools 插件/);
+assert.match(acceptance, /realCignaEndToEndVerified/);
+assert.match(acceptance, /真实登录态 Cigna Envoy 页面完成最终提交/);
 
 const tmp = await mkdtemp(join(tmpdir(), "cigna-release-test-"));
 try {

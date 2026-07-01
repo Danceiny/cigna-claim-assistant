@@ -26,6 +26,7 @@ await cp(join(root, "docs", "OPEN_INSTALLER.command"), join(stagingDir, "OPEN_IN
 await chmod(join(stagingDir, "OPEN_INSTALLER.command"), 0o755);
 await cp(join(root, "docs", "INSTALL.zh-CN.md"), join(stagingDir, "INSTALL.zh-CN.md"));
 await cp(join(root, "docs", "VERIFICATION.md"), join(stagingDir, "VERIFICATION.md"));
+await cp(join(root, "docs", "ACCEPTANCE.zh-CN.md"), join(stagingDir, "ACCEPTANCE.zh-CN.md"));
 await mkdir(join(stagingDir, "scripts"), { recursive: true });
 await cp(join(root, "scripts", "generate-ocr-sidecars.mjs"), join(stagingDir, "scripts", "generate-ocr-sidecars.mjs"));
 await cp(join(root, "scripts", "scan-claims.mjs"), join(stagingDir, "scripts", "scan-claims.mjs"));
@@ -43,6 +44,7 @@ await assertFile(join(stagingDir, "START.html"));
 await assertFile(join(stagingDir, "OPEN_INSTALLER.command"));
 await assertFile(join(stagingDir, "INSTALL.zh-CN.md"));
 await assertFile(join(stagingDir, "VERIFICATION.md"));
+await assertFile(join(stagingDir, "ACCEPTANCE.zh-CN.md"));
 await assertFile(join(stagingDir, "scripts", "generate-ocr-sidecars.mjs"));
 await assertFile(join(stagingDir, "scripts", "scan-claims.mjs"));
 await assertFile(join(stagingDir, "scripts", "test-core-sync.mjs"));
@@ -74,6 +76,7 @@ async function writeReleaseManifest() {
     "OPEN_INSTALLER.command",
     "INSTALL.zh-CN.md",
     "VERIFICATION.md",
+    "ACCEPTANCE.zh-CN.md",
     "README.md",
     "extension/manifest.json",
     "extension/popup.html",
