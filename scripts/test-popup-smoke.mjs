@@ -204,6 +204,7 @@ try {
   await page.waitForFunction(() => document.querySelector("#ledgerStatus")?.textContent.includes("1 个理赔键"));
   assert.match(await page.locator("#ledgerStatus").innerText(), /0 个提交日期，1 个理赔键，1 个文件哈希/);
   assert.equal(await page.locator("#folderFiles").evaluate((input) => input.hasAttribute("webkitdirectory")), true);
+  assert.match(await page.locator(".dropzone").innerText(), /拖入 PDF\/图片\/文件夹/);
   await page.locator("#files").evaluate((input) => {
     input.addEventListener("click", () => {
       window.__fileInputClicked = true;
