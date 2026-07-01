@@ -35,9 +35,12 @@
 
 ## 当前已验证证据
 
+- 本机无浏览器静态验证：
+  - `npm run verify:static`
+  - 覆盖源码、Chrome manifest、uTools 元数据、关键提交流程锚点、日期选择器约束、真实 Cigna 端到端限制说明和文档边界。该入口不会启动本机 Chrome、Chromium 或 Playwright，适合在用户正在使用浏览器或需要保留登录态时运行。
 - 源码仓库一键 release 验证：
   - `npm run verify:release`
-  - 顺序覆盖核心识别、核心同步、本地 helper、扫描 CLI、PDF 压缩、mock Cigna 提交、Chrome background/popup/manifest、release 打包、打包后 Chrome 扩展加载、uTools `.upx` 审计、uTools 页面 smoke、release helper 解包运行和 release 解压后用户侧入口冒烟验证。
+  - 顺序覆盖核心识别、核心同步、本地 helper、扫描 CLI、PDF 压缩、mock Cigna 提交、Chrome background/popup/manifest、release 打包、打包后 Chrome 扩展加载、uTools `.upx` 审计、uTools 页面 smoke、release helper 解包运行和 release 解压后用户侧入口冒烟验证。其中扩展加载和页面 smoke 可能启动 Playwright/Chromium；本机浏览器不能被打扰时不要运行，应交给 GitHub Actions 远端执行。
 - 文件识别、分组、最早治疗日期、最早提交服务日期、发票/医疗文件阻塞、重复文件和已提交日期阻塞：
 - `npm run claims:test`
 - 覆盖长期病症最早治疗日期不会被误用为服务日期、服务日期不会冒充最早治疗日期、PDF 内最早治疗日期优先用于 Cigna 日期选择器、最早治疗日期来源标记、稳定附件上传顺序、日期文件夹内 `scan_1/scan_2` 自动分组和类型推断、跨日期同名扫描件不被逻辑去重吞掉，以及手动修正扫描件后重新分组。

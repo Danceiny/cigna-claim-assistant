@@ -95,6 +95,7 @@ assert.equal(Boolean(helperPackage.dependencies["pdfjs-dist"]), true);
 assert.equal(Boolean(helperPackage.dependencies.playwright), true);
 assert.equal(rootPackage.scripts["utools:test:renderer"], "node scripts/test-utools-renderer.mjs");
 assert.equal(rootPackage.scripts["extension:test:zip:load"], "node scripts/test-extension-zip-load.mjs");
+assert.equal(rootPackage.scripts["verify:static"], "node scripts/verify-static.mjs");
 assert.equal(rootPackage.scripts["verify:release"], "node scripts/verify-release.mjs");
 assert.equal(rootPackage.scripts["extension:test:release-user-smoke"], "node scripts/test-release-user-smoke.mjs");
 

@@ -214,13 +214,21 @@ uTools 插件里的 `扫描时压缩超限 PDF` 会传给同一套本地扫描 C
 
 ## 验证
 
+本机只想做不干扰 Chrome 的快速检查时运行：
+
+```bash
+npm run verify:static
+```
+
+这个入口只检查源码、manifest、uTools 元数据、关键提交链路和文档约束，不会启动本机 Chrome、Chromium 或 Playwright。需要避免影响当前登录态或正在使用的浏览器时，只运行这个命令；完整浏览器验证交给 GitHub Actions 远端执行。
+
 在源码仓库里一键生成并验证当前可交付包：
 
 ```bash
 npm run verify:release
 ```
 
-它会顺序覆盖核心识别、CLI/helper、PDF 压缩、mock Cigna 提交、Chrome popup/background/manifest、release 打包、打包后 Chrome 扩展加载、uTools `.upx` 审计、uTools 页面 smoke、release helper 解包运行和 release 解压后用户侧入口冒烟验证。解压后的 release 包只保留用户侧 helper 命令，完整 release 验证入口保留在源码仓库。
+它会顺序覆盖核心识别、CLI/helper、PDF 压缩、mock Cigna 提交、Chrome popup/background/manifest、release 打包、打包后 Chrome 扩展加载、uTools `.upx` 审计、uTools 页面 smoke、release helper 解包运行和 release 解压后用户侧入口冒烟验证。其中扩展加载和页面 smoke 可能启动 Playwright/Chromium，本机浏览器不能被打扰时不要运行。解压后的 release 包只保留用户侧 helper 命令，完整 release 验证入口保留在源码仓库。
 
 也可以按需单独运行：
 

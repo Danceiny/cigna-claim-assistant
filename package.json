@@ -36,6 +36,7 @@
     "extension:package": "node scripts/package-extension.mjs",
     "utools:package": "node scripts/package-utools.mjs",
     "extension:release": "node scripts/package-release.mjs",
+    "verify:static": "node scripts/verify-static.mjs",
     "verify:release": "node scripts/verify-release.mjs"
   },
   "dependencies": {
