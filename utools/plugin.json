@@ -1,7 +1,7 @@
 {
   "pluginName": "Cigna Claim Assistant",
   "description": "本地扫描报销 PDF，生成 Cigna 理赔计划，并作为 Chrome 扩展提交入口的桌面伴侣。",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "author": "local",
   "homepage": "https://customer.cignaenvoy.com/",
   "logo": "logo.png",
