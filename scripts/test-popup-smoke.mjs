@@ -694,7 +694,7 @@ try {
   await page.evaluate(() => {
     window.__chromeStore.submissionStatus = {
       status: "submitting",
-      updatedAt: "2026-07-01T11:00:00.000Z",
+      updatedAt: new Date().toISOString(),
       total: 1,
       current: 1,
     };
