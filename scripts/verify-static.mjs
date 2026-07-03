@@ -59,6 +59,8 @@ assert.match(popupHtml, /拖入 PDF\/图片/);
 assert.match(assistantHtml, /拖入 PDF\/图片\/文件夹/);
 assert.match(popupHtml, /id="autoSubmitOnSelect"/);
 assert.match(assistantHtml, /id="autoSubmitOnSelect"/);
+assert.match(popupHtml, /长期病症最早治疗日期（可选兜底）/);
+assert.match(popupHtml, /最早提交服务日期（可选过滤）/);
 
 const popupJs = await readText("extension/popup.js");
 assert.match(popupJs, /autoSubmitOnSelect/);

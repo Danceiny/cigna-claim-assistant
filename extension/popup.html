@@ -39,12 +39,12 @@
           <input id="paymentLabel" placeholder="例如 BANK 0001">
         </label>
         <label>
-          长期病症最早治疗日期
-          <input id="earliestDate" type="date">
+          长期病症最早治疗日期（可选兜底）
+          <input id="earliestDate" type="date" title="可留空。工具会优先从 PDF/OCR 或文件行修正里识别最早治疗日期；只有整单都识别不到时才使用这里的兜底值。">
         </label>
         <label>
-          最早提交服务日期
-          <input id="minServiceDate" type="date">
+          最早提交服务日期（可选过滤）
+          <input id="minServiceDate" type="date" title="可留空。不填则不限制服务日期；填写后，早于该日期的材料会被阻塞，适合只提交某一天之后的材料。">
         </label>
         <label class="inline">
           <input id="allowReview" type="checkbox" checked>

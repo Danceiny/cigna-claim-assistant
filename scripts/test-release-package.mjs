@@ -135,6 +135,10 @@ assert.match(popupHtml, /id="dryRunSubmit"/);
 assert.match(assistantHtml, /id="dryRunSubmit"/);
 assert.match(popupHtml, /id="autoSubmitOnSelect"/);
 assert.match(assistantHtml, /id="autoSubmitOnSelect"/);
+assert.match(popupHtml, /长期病症最早治疗日期（可选兜底）/);
+assert.match(popupHtml, /最早提交服务日期（可选过滤）/);
+assert.match(assistantHtml, /长期病症最早治疗日期（可选兜底）/);
+assert.match(assistantHtml, /最早提交服务日期（可选过滤）/);
 assert.match(popupHtml, /id="settingsStatus"/);
 assert.match(assistantHtml, /id="settingsStatus"/);
 assert.match(popupHtml, /id="ledgerStatus"/);
@@ -189,6 +193,7 @@ assert.match(popupJs, /dry-run-ready/);
 assert.doesNotMatch(popupJs, /thumbnailDataUrl"\s*:/);
 assert.doesNotMatch(popupJs, /TEST BENEFICIARY/);
 assert.doesNotMatch(popupJs, /\["ongoingConditionEarliestDate",\s*"长期病症最早治疗日期"\]/);
+assert.doesNotMatch(popupJs, /\["minServiceDate",\s*"最早提交服务日期"\]/);
 
 const submitter = await unzip(["-p", releaseZip, `${releasePrefix}extension/content/cignaSubmitter.js`]);
 const background = await unzip(["-p", releaseZip, `${releasePrefix}extension/background.js`]);

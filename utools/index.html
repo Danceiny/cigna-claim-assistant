@@ -39,12 +39,12 @@
           <input id="paymentLabel" placeholder="例如 BANK 0001">
         </label>
         <label>
-          最早提交服务日期
-          <input id="minServiceDate" type="date">
+          最早提交服务日期（可选过滤）
+          <input id="minServiceDate" type="date" title="可留空。不填则不限制服务日期；填写后，早于该日期的材料会被阻塞。">
         </label>
         <label>
-          长期病症最早治疗日期
-          <input id="earliestDate" type="date">
+          长期病症最早治疗日期（可选兜底）
+          <input id="earliestDate" type="date" title="可留空。扫描会优先使用 PDF/OCR 识别出的最早治疗日期。">
         </label>
         <label>
           报销目录
