@@ -22,6 +22,7 @@ for (const file of [
   "renderer.js",
   "logo.png",
   "scripts/scan-claims.mjs",
+  "scripts/macos-vision-ocr.swift",
   "src/core/claimIntake.mjs",
   "node_modules/pdfjs-dist/package.json",
   "node_modules/pdf-lib/package.json",

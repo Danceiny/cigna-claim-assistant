@@ -45,6 +45,7 @@ for (const file of [
   "utools/preload.js",
   "utools/renderer.js",
   "scripts/scan-claims.mjs",
+  "scripts/macos-vision-ocr.swift",
   "scripts/package-release.mjs",
   "docs/ACCEPTANCE.zh-CN.md",
   "docs/VERIFICATION.md",
@@ -88,6 +89,10 @@ assert.match(utoolsPreload, /--file/);
 assert.match(utoolsPreload, /--organize/);
 assert.match(utoolsPreload, /exportChromeBackup/);
 assert.match(utoolsPreload, /autoSubmitOnSelect:\s*true/);
+
+const scanClaims = await readText("scripts/scan-claims.mjs");
+assert.match(scanClaims, /macos-vision-ocr\.swift/);
+assert.match(scanClaims, /runMacosVisionOcr/);
 
 const acceptance = await readText("docs/ACCEPTANCE.zh-CN.md");
 assert.match(acceptance, /真实登录态 Cigna Envoy 页面完成最终提交/);

@@ -17,7 +17,7 @@ for (const file of ["plugin.json", "index.html", "style.css", "preload.js", "ren
 }
 
 await mkdir(join(stagingDir, "scripts"), { recursive: true });
-for (const file of ["scan-claims.mjs", "generate-ocr-sidecars.mjs"]) {
+for (const file of ["scan-claims.mjs", "generate-ocr-sidecars.mjs", "macos-vision-ocr.swift"]) {
   await cp(join(root, "scripts", file), join(stagingDir, "scripts", file));
 }
 
@@ -45,6 +45,7 @@ for (const file of [
   "preload.js",
   "renderer.js",
   "scripts/scan-claims.mjs",
+  "scripts/macos-vision-ocr.swift",
   "src/core/claimIntake.mjs",
   "node_modules/pdfjs-dist/package.json",
   "node_modules/pdf-lib/package.json",

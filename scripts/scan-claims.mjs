@@ -4,6 +4,7 @@ import { access, copyFile, mkdir, readFile, readdir, stat, writeFile } from "nod
 import { constants } from "node:fs";
 import { spawn } from "node:child_process";
 import { basename, dirname, extname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { buildClaimPlan } from "../src/core/claimIntake.mjs";
 import { compressClaimFiles } from "../src/core/pdfCompress.mjs";
 
@@ -11,6 +12,7 @@ const PDFJS = await import("pdfjs-dist/legacy/build/pdf.mjs");
 PDFJS.GlobalWorkerOptions.workerSrc = new URL("../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs", import.meta.url).toString();
 
 const args = parseArgs(process.argv.slice(2));
+const scriptDir = dirname(fileURLToPath(import.meta.url));
 const inputFiles = arrayArg(args.file);
 const inputDir = args.dir || (inputFiles.length ? "" : "/Users/bytedance/Documents/报销");
 const outputPath = args.output || "outputs/cigna-claim-plan.json";
@@ -53,8 +55,8 @@ if (organized) {
 async function buildFileRecord(path, info, relativePath) {
   const bytes = await readFile(path);
   const nativeText = /\.pdf$/i.test(path) ? await extractPdfText(bytes).catch(() => "") : "";
-  const ocr = nativeText.trim() ? { skipped: true, reason: "pdf-text-layer-present" } : await extractOcrText(path);
-  const text = nativeText || ocr.text || "";
+  const ocr = await extractOcrText(path);
+  const text = [nativeText, ocr.text || ""].filter((part) => part.trim()).join("\n");
   return {
     path,
     relativePath,
@@ -151,6 +153,8 @@ async function runOcrCommand(path) {
     if (explicitCommand) {
       return { error: `OCR command not found or not executable: ${command}` };
     }
+    const macosVision = await runMacosVisionOcr(path);
+    if (macosVision) return macosVision;
     return { skipped: true, reason: "tesseract-not-installed" };
   }
 
@@ -167,6 +171,25 @@ async function runOcrCommand(path) {
   return {
     text: result.stdout,
     method: explicitCommand ? "external-ocr-command" : "tesseract",
+  };
+}
+
+async function runMacosVisionOcr(path) {
+  if (process.platform !== "darwin") return null;
+  if (!(await isExecutable("swift"))) return null;
+  const script = join(scriptDir, "macos-vision-ocr.swift");
+  if (!(await access(script, constants.R_OK).then(() => true, () => false))) return null;
+  const result = await run("swift", [script, path], { timeoutMs: Number(args["ocr-timeout-ms"] || 120000) });
+  if (result.code !== 0) {
+    return {
+      error: `macOS Vision OCR failed with exit code ${result.code}`,
+      stderr: result.stderr.slice(0, 1000),
+      method: "macos-vision",
+    };
+  }
+  return {
+    text: result.stdout,
+    method: "macos-vision",
   };
 }
 

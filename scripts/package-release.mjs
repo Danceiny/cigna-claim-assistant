@@ -30,6 +30,7 @@ await cp(join(root, "docs", "ACCEPTANCE.zh-CN.md"), join(stagingDir, "ACCEPTANCE
 await mkdir(join(stagingDir, "scripts"), { recursive: true });
 await cp(join(root, "scripts", "generate-ocr-sidecars.mjs"), join(stagingDir, "scripts", "generate-ocr-sidecars.mjs"));
 await cp(join(root, "scripts", "scan-claims.mjs"), join(stagingDir, "scripts", "scan-claims.mjs"));
+await cp(join(root, "scripts", "macos-vision-ocr.swift"), join(stagingDir, "scripts", "macos-vision-ocr.swift"));
 await cp(join(root, "scripts", "test-core-sync.mjs"), join(stagingDir, "scripts", "test-core-sync.mjs"));
 await cp(join(root, "scripts", "test-helper-package.mjs"), join(stagingDir, "scripts", "test-helper-package.mjs"));
 await mkdir(join(stagingDir, "src", "core"), { recursive: true });
@@ -47,6 +48,7 @@ await assertFile(join(stagingDir, "VERIFICATION.md"));
 await assertFile(join(stagingDir, "ACCEPTANCE.zh-CN.md"));
 await assertFile(join(stagingDir, "scripts", "generate-ocr-sidecars.mjs"));
 await assertFile(join(stagingDir, "scripts", "scan-claims.mjs"));
+await assertFile(join(stagingDir, "scripts", "macos-vision-ocr.swift"));
 await assertFile(join(stagingDir, "scripts", "test-core-sync.mjs"));
 await assertFile(join(stagingDir, "scripts", "test-helper-package.mjs"));
 await assertFile(join(stagingDir, "src", "core", "claimIntake.mjs"));
@@ -93,6 +95,7 @@ async function writeReleaseManifest() {
     "package.json",
     "scripts/generate-ocr-sidecars.mjs",
     "scripts/scan-claims.mjs",
+    "scripts/macos-vision-ocr.swift",
     "scripts/test-core-sync.mjs",
     "scripts/test-helper-package.mjs",
     "src/core/claimIntake.mjs",
@@ -135,6 +138,7 @@ async function writeReleaseManifest() {
       "pdf-text-extraction",
       "ocr-sidecar",
       "ocr-sidecar-generator",
+      "macos-vision-ocr",
       "one-claim-per-service-date",
       "invoice-and-medical-file-required",
       "duplicate-ledger",

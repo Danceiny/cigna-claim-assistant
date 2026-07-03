@@ -1,4 +1,4 @@
-const DATE_TOKEN_RE = /(?:(20\d{2})[-/.年]\s*(\d{1,2})[-/.月]\s*(\d{1,2})日?)|(?:(\d{1,2})[-/.]\s*(\d{1,2})[-/.]\s*(20\d{2}))|(?<!\d)(\d{8})(?!\d)|(?<!\d)(\d{4})(?!\d)/g;
+const DATE_TOKEN_RE = /(?:(20\d{2})\s*[-/.年]\s*(\d{1,2})\s*[-/.月]\s*(\d{1,2})日?)|(?:(\d{1,2})\s*[-/.,]\s*(\d{1,2})\s*[-/.,]\s*(20\d{2}))|(?<!\d)(\d{8})(?!\d)|(?<!\d)(\d{4})(?!\d)/g;
 
 export const DEFAULT_SETTINGS = {
   diagnosis: "",
@@ -306,14 +306,14 @@ export function pickServiceDate({ text, name, filenameDates, pathDates = [], tex
 
 export function pickEarliestTreatmentDate({ text, serviceDate, settings }) {
   const patterns = [
-    /date\s+of\s+first\s+consultation[^0-9]{0,80}([0-9./-]{8,10})/i,
-    /first\s+consultation[^0-9]{0,80}([0-9./-]{8,10})/i,
-    /date\s+of\s+onset[^0-9]{0,80}([0-9./-]{8,10})/i,
+    /date\s+of\s+first\s+consultation[\s\S]{0,160}/i,
+    /first\s+consultation[\s\S]{0,160}/i,
+    /date\s+of\s+onset[\s\S]{0,160}/i,
   ];
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match) {
-      const [iso] = extractDates(match[1], settings.defaultYear);
+      const [iso] = extractDates(match[0], settings.defaultYear);
       if (iso) return iso;
     }
   }

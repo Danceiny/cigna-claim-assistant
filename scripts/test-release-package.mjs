@@ -40,6 +40,7 @@ for (const file of [
   "package.json",
   "scripts/generate-ocr-sidecars.mjs",
   "scripts/scan-claims.mjs",
+  "scripts/macos-vision-ocr.swift",
   "scripts/test-core-sync.mjs",
   "scripts/test-helper-package.mjs",
   "src/core/claimIntake.mjs",
@@ -73,6 +74,7 @@ assert.equal(releaseManifest.extension.version, manifest.version);
 assert.equal(releaseManifest.limits.realCignaEndToEndVerified, false);
 assert.equal(releaseManifest.capabilities.includes("ocr-sidecar"), true);
 assert.equal(releaseManifest.capabilities.includes("utools-plugin"), true);
+assert.equal(releaseManifest.capabilities.includes("macos-vision-ocr"), true);
 assert.equal(releaseManifest.capabilities.includes("desktop-scan-companion"), true);
 assert.equal(releaseManifest.capabilities.includes("ocr-sidecar-generator"), true);
 assert.equal(releaseManifest.capabilities.includes("auto-submit-on-file-select"), true);
@@ -105,6 +107,7 @@ const utoolsHtml = await unzip(["-p", releaseZip, `${releasePrefix}utools/index.
 const utoolsPlugin = JSON.parse(await unzip(["-p", releaseZip, `${releasePrefix}utools/plugin.json`]));
 const utoolsPreload = await unzip(["-p", releaseZip, `${releasePrefix}utools/preload.js`]);
 const utoolsRenderer = await unzip(["-p", releaseZip, `${releasePrefix}utools/renderer.js`]);
+const packagedScanClaims = await unzip(["-p", releaseZip, `${releasePrefix}scripts/scan-claims.mjs`]);
 assert.equal(utoolsPlugin.pluginName, "Cigna Claim Assistant");
 assert.equal(utoolsPlugin.version, rootPackage.version);
 assert.equal(utoolsPlugin.main, "index.html");
@@ -125,6 +128,7 @@ assert.match(utoolsPreload, /--organize/);
 assert.match(utoolsPreload, /--file/);
 assert.match(utoolsPreload, /--ocr-command/);
 assert.match(utoolsPreload, /autoSubmitOnSelect:\s*true/);
+assert.match(packagedScanClaims, /macos-vision-ocr\.swift/);
 assert.match(utoolsHtml, /id="ocrEnabled"/);
 assert.match(utoolsHtml, /id="compressEnabled"/);
 assert.match(utoolsHtml, /id="organizeEnabled"/);

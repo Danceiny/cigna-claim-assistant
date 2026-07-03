@@ -3,11 +3,13 @@ import { access, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promi
 import { constants } from "node:fs";
 import { basename, dirname, extname, join, relative } from "node:path";
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const PDFJS = await import("pdfjs-dist/legacy/build/pdf.mjs");
 PDFJS.GlobalWorkerOptions.workerSrc = new URL("../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs", import.meta.url).toString();
 
 const args = parseArgs(process.argv.slice(2));
+const scriptDir = dirname(fileURLToPath(import.meta.url));
 const inputDir = args.dir || "/Users/bytedance/Documents/报销";
 const command = args["ocr-command"] || "tesseract";
 const explicitCommand = Boolean(args["ocr-command"]);
@@ -18,10 +20,11 @@ const force = Boolean(args.force);
 const sidecarStyle = args["sidecar-style"] || "pdf.txt";
 
 const commandAvailable = await isExecutable(command);
-if (!commandAvailable) {
+const macosVisionAvailable = !explicitCommand && await hasMacosVisionOcr();
+if (!commandAvailable && !macosVisionAvailable) {
   const message = explicitCommand
     ? `OCR command not found or not executable: ${command}`
-    : "tesseract is not installed or not on PATH. Install tesseract, pass --ocr-command, or use existing sidecars.";
+    : "tesseract is not installed or not on PATH, and macOS Vision OCR is unavailable. Install tesseract, pass --ocr-command, or use existing sidecars.";
   console.error(message);
   process.exitCode = 1;
 } else {
@@ -68,7 +71,7 @@ async function generateSidecar(path, relativePath) {
     relativePath,
     outputPath,
     bytes: Buffer.byteLength(result.stdout),
-    method: explicitCommand ? "external-ocr-command" : "tesseract",
+    method: result.method,
   };
 }
 
@@ -108,8 +111,19 @@ function sidecarPathFor(path) {
 }
 
 async function runOcrCommand(path) {
+  if (!commandAvailable && macosVisionAvailable) {
+    const script = join(scriptDir, "macos-vision-ocr.swift");
+    return { ...await run("swift", [script, path], { timeoutMs: Math.max(timeoutMs, 120000) }), method: "macos-vision" };
+  }
   const commandArgs = explicitCommand ? [path] : [path, "stdout", "-l", lang];
-  return run(command, commandArgs, { timeoutMs });
+  return { ...await run(command, commandArgs, { timeoutMs }), method: explicitCommand ? "external-ocr-command" : "tesseract" };
+}
+
+async function hasMacosVisionOcr() {
+  if (process.platform !== "darwin") return false;
+  if (!(await isExecutable("swift"))) return false;
+  const script = join(scriptDir, "macos-vision-ocr.swift");
+  return access(script, constants.R_OK).then(() => true, () => false);
 }
 
 async function isExecutable(candidate) {
