@@ -81,6 +81,7 @@ assert.match(background, /if \(!dryRun\) await recordSubmittedClaims/);
 const utoolsPreload = await readText("utools/preload.js");
 assert.match(utoolsPreload, /inputFromDrop/);
 assert.match(utoolsPreload, /--file/);
+assert.match(utoolsPreload, /--organize/);
 assert.match(utoolsPreload, /exportChromeBackup/);
 assert.match(utoolsPreload, /autoSubmitOnSelect:\s*true/);
 

@@ -30,6 +30,7 @@ try {
           claimDir: "/tmp/claims",
           ocrEnabled: true,
           compressEnabled: true,
+          organizeEnabled: true,
           ocrCommand: "/usr/local/bin/ocr-wrapper",
         };
       },
@@ -87,6 +88,7 @@ try {
   assert.equal(await page.locator("#claimDir").inputValue(), "/tmp/claims");
   assert.equal(await page.locator("#ocrEnabled").isChecked(), true);
   assert.equal(await page.locator("#compressEnabled").isChecked(), true);
+  assert.equal(await page.locator("#organizeEnabled").isChecked(), true);
   assert.equal(await page.locator("#ocrCommand").inputValue(), "/usr/local/bin/ocr-wrapper");
   assert.match(await page.locator("#settingsStatus").innerText(), /已就绪/);
 
@@ -128,7 +130,7 @@ try {
   calls = await page.evaluate(() => window.__utoolsCalls);
   assert.equal(calls.some((call) => call.type === "chooseDirectory"), true);
   assert.equal(calls.some((call) => call.type === "inputFromDrop"), true);
-  assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.paymentLabel === "BANK 0001" && call.options.dir === "/tmp" && call.options.filePaths?.length === 2 && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
+  assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.paymentLabel === "BANK 0001" && call.options.dir === "/tmp" && call.options.filePaths?.length === 2 && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.organizeEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
   assert.equal(calls.some((call) => call.type === "exportChromeBackup" && call.settings.beneficiaryName === "TEST USER"), true);
   assert.equal(calls.some((call) => call.type === "openChromeSubmit"), true);
   assert.equal(calls.some((call) => call.type === "openReleaseFolder"), true);

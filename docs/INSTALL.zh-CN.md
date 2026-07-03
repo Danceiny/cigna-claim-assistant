@@ -95,9 +95,9 @@ npm run claims:ocr-sidecars -- --dir /Users/bytedance/Documents/报销 --ocr-com
 
 1. 在 uTools 中导入 release 包里的 `cigna-claim-assistant-utools.upx`。
 2. 用关键词 `cigna`、`报销`、`理赔` 或 `claim` 打开插件。
-3. 选择或拖入报销文件夹，或直接拖入一组 PDF/图片文件；填写被保险人、报销理由、治疗国家/地区、理赔类型、就诊类型和付款账户关键词。最早提交服务日期和长期病症最早治疗日期都可留空；拖入文件时只扫描这些指定文件，拖入文件夹时才递归扫描整个目录。
+3. 选择或拖入一个固定报销文件夹；之后只要把 PDF/图片扔进这个文件夹，再点击扫描即可。也兼容直接拖入一组 PDF/图片文件。填写被保险人、报销理由、治疗国家/地区、理赔类型、就诊类型和付款账户关键词。最早提交服务日期和长期病症最早治疗日期都可留空；拖入文件时只扫描这些指定文件，拖入文件夹时才递归扫描整个目录。
 4. 点击 `扫描并导出计划`，插件会调用本地扫描 helper，输出 `outputs/utools-claim-plan.json`。
-5. 扫描件没有文本层时，可打开 `扫描时启用本机 OCR`。`OCR 命令` 可留空使用本地扫描 CLI 的 tesseract 兜底，也可填写自己的 OCR wrapper 路径。需要在桌面端先处理超限 PDF 时，可打开 `扫描时压缩超限 PDF`。
+5. 扫描件没有文本层时，可打开 `扫描时启用本机 OCR`。`OCR 命令` 可留空使用本地扫描 CLI 的 tesseract 兜底，也可填写自己的 OCR wrapper 路径。需要在桌面端先处理超限 PDF 时，可打开 `扫描时压缩超限 PDF`。文件名很乱时，打开 `扫描后自动整理命名副本`，会把识别后的文件复制到 `outputs/organized-claims/服务日期/` 并生成规范文件名；原始文件不会被改名。
 6. 可点击 `导出 Chrome 设置`，生成 `outputs/cigna-claim-assistant-chrome-settings-backup.json`；在 Chrome 扩展中点 `导入备份` 选择该文件，可复用 uTools 里的基础设置。导出前页面会显示 Chrome 自动提交设置是否就绪；如果提示 `Chrome 自动提交设置未就绪`，先补齐被保险人、报销理由、治疗国家/地区、理赔类型、就诊类型或付款账户关键词。
 7. 点击 `打开 Cigna` 后，在常用 Chrome 中使用已安装的 Chrome 插件完成自动提交。
 

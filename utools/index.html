@@ -58,6 +58,10 @@
           <input id="compressEnabled" type="checkbox">
           扫描时压缩超限 PDF
         </label>
+        <label class="inline">
+          <input id="organizeEnabled" type="checkbox">
+          扫描后自动整理命名副本
+        </label>
         <label>
           OCR 命令
           <input id="ocrCommand" placeholder="可留空使用 tesseract，或填写 OCR wrapper 路径">
@@ -67,8 +71,8 @@
       <section id="settingsStatus" class="settings-status"></section>
 
       <section id="dropzone" class="dropzone">
-        <strong>拖入报销文件夹或 PDF</strong>
-        <span>拖入文件夹会扫描该目录；拖入单个 PDF 会使用它所在目录。</span>
+        <strong>拖入或选择报销文件夹</strong>
+        <span>建议固定一个收件文件夹；之后只要把 PDF/图片扔进去，再点扫描即可。单个文件拖入只是兼容入口。</span>
       </section>
 
       <section class="actions">

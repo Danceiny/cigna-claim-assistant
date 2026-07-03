@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -189,6 +189,34 @@ try {
   assert.deepEqual(exactFilesPlan.claims[0].files.map((file) => file.relativePath).sort(), [
     "picked-invoice.pdf",
     "picked-medical.pdf",
+  ]);
+
+  const messyDir = join(inputDir, "messy-folder");
+  await mkdir(messyDir, { recursive: true });
+  await writeFile(join(messyDir, "IMG_9942 final FINAL.pdf"), blankPdf);
+  await writeFile(join(messyDir, "wechat export(7).pdf"), blankPdf);
+  await writeFile(join(messyDir, "IMG_9942 final FINAL.pdf.txt"), "Cigna claim form. Treatment Date 20/05/2026. Date of first consultation 05/05/2026. Diagnosis lower back pain.");
+  await writeFile(join(messyDir, "wechat export(7).pdf.txt"), "Tax Invoice. Invoice Date 20/05/2026.");
+  const organizedDir = join(tmp, "organized-claims");
+  const messyOutputPath = join(tmp, "messy-plan.json");
+  await run(process.execPath, [
+    "scripts/scan-claims.mjs",
+    "--dir",
+    messyDir,
+    "--output",
+    messyOutputPath,
+    "--organize",
+    "--organize-dir",
+    organizedDir,
+  ]);
+  const organizedManifest = JSON.parse(await readFile(join(organizedDir, "organize-manifest.json"), "utf8"));
+  assert.equal(organizedManifest.files.length, 2);
+  assert.equal(organizedManifest.files.every((file) => file.serviceDate === "2026-05-20"), true);
+  assert.equal(organizedManifest.files.some((file) => /2026-05-20_01_claim-form_IMG_9942-final-FINAL\.pdf$/.test(file.target)), true);
+  assert.equal(organizedManifest.files.some((file) => /2026-05-20_02_invoice_wechat-export-7\.pdf$/.test(file.target)), true);
+  assert.deepEqual((await readdir(join(organizedDir, "2026-05-20"))).sort(), [
+    "2026-05-20_01_claim-form_IMG_9942-final-FINAL.pdf",
+    "2026-05-20_02_invoice_wechat-export-7.pdf",
   ]);
 
   console.log("scan claims CLI test passed");

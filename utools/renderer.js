@@ -10,6 +10,7 @@ const fields = {
   claimDir: document.querySelector("#claimDir"),
   ocrEnabled: document.querySelector("#ocrEnabled"),
   compressEnabled: document.querySelector("#compressEnabled"),
+  organizeEnabled: document.querySelector("#organizeEnabled"),
   ocrCommand: document.querySelector("#ocrCommand"),
 };
 
@@ -39,6 +40,7 @@ fields.earliestDate.value = savedSettings.earliestDate || "";
 fields.claimDir.value = savedSettings.claimDir || "";
 fields.ocrEnabled.checked = Boolean(savedSettings.ocrEnabled);
 fields.compressEnabled.checked = Boolean(savedSettings.compressEnabled);
+fields.organizeEnabled.checked = savedSettings.organizeEnabled !== false;
 fields.ocrCommand.value = savedSettings.ocrCommand || "";
 
 for (const field of Object.values(fields)) {
@@ -99,6 +101,7 @@ document.querySelector("#scanDir").addEventListener("click", async () => {
     earliestDate: fields.earliestDate.value,
     ocrEnabled: fields.ocrEnabled.checked,
     compressEnabled: fields.compressEnabled.checked,
+    organizeEnabled: fields.organizeEnabled.checked,
     ocrCommand: fields.ocrCommand.value.trim(),
   });
   if (!result.ok) {
@@ -154,6 +157,7 @@ function readSettings() {
     claimDir: selectedFilePaths.length ? selectedInputDir : fields.claimDir.value.trim(),
     ocrEnabled: fields.ocrEnabled.checked,
     compressEnabled: fields.compressEnabled.checked,
+    organizeEnabled: fields.organizeEnabled.checked,
     ocrCommand: fields.ocrCommand.value.trim(),
   };
 }

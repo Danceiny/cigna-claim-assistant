@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
-import { access, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { access, copyFile, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { spawn } from "node:child_process";
 import { basename, dirname, extname, join, relative } from "node:path";
@@ -16,6 +16,8 @@ const inputDir = args.dir || (inputFiles.length ? "" : "/Users/bytedance/Documen
 const outputPath = args.output || "outputs/cigna-claim-plan.json";
 const doCompress = Boolean(args.compress);
 const doOcr = Boolean(args.ocr);
+const doOrganize = Boolean(args.organize);
+const organizeDir = args["organize-dir"] || "outputs/organized-claims";
 const settings = {
   diagnosis: args.diagnosis || "",
   ongoingConditionEarliestDate: args.earliest || "",
@@ -41,7 +43,12 @@ if (doCompress) {
 
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, `${JSON.stringify(plan, null, 2)}\n`);
+const organized = doOrganize ? await organizePlanFiles(plan, organizeDir) : null;
 printSummary(plan, outputPath);
+if (organized) {
+  console.log(`Organized: ${organized.files.length} files -> ${organized.dir}`);
+  console.log(`Organize manifest: ${organized.manifestPath}`);
+}
 
 async function buildFileRecord(path, info, relativePath) {
   const bytes = await readFile(path);
@@ -184,6 +191,75 @@ function printSummary(plan, outputPath) {
     for (const blocker of claim.blockers) console.log(`  BLOCK ${blocker}`);
     for (const warning of claim.warnings.slice(0, 3)) console.log(`  WARN  ${warning}`);
   }
+}
+
+async function organizePlanFiles(plan, targetDir) {
+  await mkdir(targetDir, { recursive: true });
+  const used = new Set();
+  const entries = [];
+  for (const claim of plan.claims) {
+    const claimDir = join(targetDir, safeName(claim.serviceDate || "undated"));
+    await mkdir(claimDir, { recursive: true });
+    for (const file of claim.files || []) {
+      if (!file.path) continue;
+      const ext = extname(file.name || file.path) || ".bin";
+      const ordered = String(file.uploadOrder || entries.length + 1).padStart(2, "0");
+      const base = safeName(stripExtension(file.name || basename(file.path))) || "file";
+      const targetName = uniqueTargetName(
+        claimDir,
+        `${claim.serviceDate || "undated"}_${ordered}_${safeName(file.kind || "unknown")}_${base}${ext.toLowerCase()}`,
+        used,
+      );
+      const targetPath = join(claimDir, targetName);
+      await copyFile(file.path, targetPath);
+      entries.push({
+        source: file.path,
+        target: targetPath,
+        serviceDate: claim.serviceDate || "",
+        claimDate: claim.claimDate || "",
+        kind: file.kind || "unknown",
+        uploadOrder: file.uploadOrder || null,
+        sha256: file.sha256 || "",
+        status: claim.status,
+      });
+    }
+  }
+  const manifestPath = join(targetDir, "organize-manifest.json");
+  const manifest = {
+    schema: "cigna-claim-assistant-organized-v1",
+    generatedAt: new Date().toISOString(),
+    dir: targetDir,
+    files: entries,
+  };
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  return { dir: targetDir, manifestPath, files: entries };
+}
+
+function uniqueTargetName(dir, name, used) {
+  const ext = extname(name);
+  const stem = stripExtension(name);
+  let candidate = name;
+  let index = 2;
+  while (used.has(join(dir, candidate))) {
+    candidate = `${stem}-${index}${ext}`;
+    index += 1;
+  }
+  used.add(join(dir, candidate));
+  return candidate;
+}
+
+function safeName(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[^\w.-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-.]+|[-.]+$/g, "")
+    .slice(0, 96);
+}
+
+function stripExtension(value) {
+  const ext = extname(value);
+  return ext ? value.slice(0, -ext.length) : value;
 }
 
 function parseArgs(argv) {

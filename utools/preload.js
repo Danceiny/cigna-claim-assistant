@@ -54,6 +54,7 @@ window.cignaAssistant = {
       claimDir: settings.claimDir || "",
       ocrEnabled: Boolean(settings.ocrEnabled),
       compressEnabled: Boolean(settings.compressEnabled),
+      organizeEnabled: settings.organizeEnabled !== false,
       ocrCommand: settings.ocrCommand || "",
     };
     globalThis.utools?.dbStorage?.setItem?.(settingsKey, next);
@@ -121,6 +122,7 @@ window.cignaAssistant = {
       claimDir: dir,
       ocrEnabled: options.ocrEnabled,
       compressEnabled: options.compressEnabled,
+      organizeEnabled: options.organizeEnabled,
       ocrCommand: options.ocrCommand,
     });
     const script = join(releaseRoot, "scripts", "scan-claims.mjs");
@@ -136,6 +138,7 @@ window.cignaAssistant = {
       args.push("--dir", dir);
     }
     if (options.compressEnabled) args.push("--compress");
+    if (options.organizeEnabled) args.push("--organize", "--organize-dir", join(releaseRoot, "outputs", "organized-claims"));
     if (options.minServiceDate) args.push("--min-service-date", options.minServiceDate);
     if (options.earliestDate) args.push("--earliest", options.earliestDate);
     if (options.ocrEnabled) {

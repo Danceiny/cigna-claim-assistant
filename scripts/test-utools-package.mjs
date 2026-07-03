@@ -42,7 +42,9 @@ const renderer = await run("unzip", ["-p", packagePath, "renderer.js"]);
 assert.match(preload, /scanDirectory/);
 assert.match(preload, /ocrEnabled/);
 assert.match(preload, /compressEnabled/);
+assert.match(preload, /organizeEnabled/);
 assert.match(preload, /--compress/);
+assert.match(preload, /--organize/);
 assert.match(preload, /--ocr-command/);
 assert.match(preload, /loadSettings/);
 assert.match(preload, /saveSettings/);
@@ -54,6 +56,7 @@ assert.match(preload, /scan-claims\.mjs/);
 assert.match(preload, /shellOpenExternal/);
 assert.match(preload, /new-submitclaim/);
 assert.match(indexHtml, /id="settingsStatus"/);
+assert.match(indexHtml, /organizeEnabled/);
 assert.match(renderer, /renderSettingsStatus/);
 assert.match(renderer, /missingRequiredSettings/);
 assert.match(renderer, /请先填写必填设置/);
@@ -101,6 +104,7 @@ require("./preload.js");
     claimDir: picked,
     ocrEnabled: true,
     compressEnabled: true,
+    organizeEnabled: true,
     ocrCommand: ${JSON.stringify(process.execPath)}
   });
   if (window.cignaAssistant.loadSettings().minServiceDate !== "2026-05-08") throw new Error("settings were not persisted");
@@ -119,6 +123,7 @@ require("./preload.js");
   const stored = window.cignaAssistant.loadSettings();
   if (stored.ocrEnabled !== true) throw new Error("OCR setting was not persisted");
   if (stored.compressEnabled !== true) throw new Error("compression setting was not persisted");
+  if (stored.organizeEnabled !== true) throw new Error("organize setting was not persisted");
   if (stored.ocrCommand !== ${JSON.stringify(process.execPath)}) throw new Error("OCR command was not persisted");
   window.cignaAssistant.openChromeSubmit();
   if (!openedUrl.includes("new-submitclaim")) throw new Error("Cigna URL was not opened");
@@ -183,6 +188,7 @@ async function runRendererSmoke(pluginRoot) {
             claimDir: "/tmp/packaged-claims",
             ocrEnabled: true,
             compressEnabled: true,
+            organizeEnabled: true,
             ocrCommand: "/usr/local/bin/ocr-wrapper",
           };
         },
@@ -256,7 +262,7 @@ async function runRendererSmoke(pluginRoot) {
     await page.locator("#openChromeSubmit").click();
     await page.locator("#openReleaseFolder").click();
     calls = await page.evaluate(() => window.__utoolsCalls);
-    assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.claimDir === undefined && call.options.dir === "/tmp" && call.options.filePaths?.length === 2 && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
+    assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.claimDir === undefined && call.options.dir === "/tmp" && call.options.filePaths?.length === 2 && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.organizeEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
     assert.equal(calls.some((call) => call.type === "exportChromeBackup" && call.settings.beneficiaryName === "PACKAGED USER"), true);
   } finally {
     await browser?.close();
