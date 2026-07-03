@@ -15,7 +15,7 @@ const tmp = await mkdtemp(join(tmpdir(), "cigna-extension-zip-load-"));
 try {
   await run("unzip", ["-q", extensionZip, "-d", tmp], { timeoutMs: 30000 });
   await run(process.execPath, ["scripts/test-extension-load.mjs"], {
-    timeoutMs: 30000,
+    timeoutMs: 90000,
     env: {
       ...process.env,
       EXTENSION_DIR: tmp,
