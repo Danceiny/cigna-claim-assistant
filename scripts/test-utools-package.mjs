@@ -43,6 +43,9 @@ assert.match(preload, /scanDirectory/);
 assert.match(preload, /ocrEnabled/);
 assert.match(preload, /compressEnabled/);
 assert.match(preload, /organizeEnabled/);
+assert.match(preload, /onlyNewEnabled/);
+assert.match(preload, /saveFolderState/);
+assert.match(preload, /folderStateKey/);
 assert.match(preload, /--compress/);
 assert.match(preload, /--organize/);
 assert.match(preload, /--ocr-command/);
@@ -57,6 +60,8 @@ assert.match(preload, /shellOpenExternal/);
 assert.match(preload, /new-submitclaim/);
 assert.match(indexHtml, /id="settingsStatus"/);
 assert.match(indexHtml, /organizeEnabled/);
+assert.match(indexHtml, /onlyNewEnabled/);
+assert.match(indexHtml, /baselineDir/);
 assert.match(renderer, /renderSettingsStatus/);
 assert.match(renderer, /missingRequiredSettings/);
 assert.match(renderer, /请先填写必填设置/);
@@ -68,6 +73,7 @@ try {
   const emptyDir = join(tmp, "empty");
   const planPath = join(tmp, "plan.json");
   const droppedPdfPath = join(tmp, "dropped.pdf");
+  const inboxPdfPath = join(emptyDir, "new-claim.pdf");
   await mkdir(emptyDir);
   await writeFile(droppedPdfPath, "%PDF-1.4\n");
   await run(process.execPath, [scanScript, "--dir", emptyDir, "--output", planPath]);
@@ -77,11 +83,18 @@ try {
   await writeFile(preloadSmoke, `
 global.window = {};
 let storedSettings = null;
+let storedFolderState = null;
 let openedUrl = "";
 global.utools = {
   dbStorage: {
-    getItem() { return storedSettings; },
-    setItem(key, value) { storedSettings = value; }
+    getItem(key) {
+      if (key === "cigna-claim-assistant-folder-state") return storedFolderState;
+      return storedSettings;
+    },
+    setItem(key, value) {
+      if (key === "cigna-claim-assistant-folder-state") storedFolderState = value;
+      else storedSettings = value;
+    }
   },
   showOpenDialog() { return [${JSON.stringify(emptyDir)}]; },
   shellOpenExternal(url) { openedUrl = url; }
@@ -105,6 +118,7 @@ require("./preload.js");
     ocrEnabled: true,
     compressEnabled: true,
     organizeEnabled: true,
+    onlyNewEnabled: true,
     ocrCommand: ${JSON.stringify(process.execPath)}
   });
   if (window.cignaAssistant.loadSettings().minServiceDate !== "2026-05-08") throw new Error("settings were not persisted");
@@ -124,7 +138,16 @@ require("./preload.js");
   if (stored.ocrEnabled !== true) throw new Error("OCR setting was not persisted");
   if (stored.compressEnabled !== true) throw new Error("compression setting was not persisted");
   if (stored.organizeEnabled !== true) throw new Error("organize setting was not persisted");
+  if (stored.onlyNewEnabled !== true) throw new Error("only-new setting was not persisted");
   if (stored.ocrCommand !== ${JSON.stringify(process.execPath)}) throw new Error("OCR command was not persisted");
+  const baseline = window.cignaAssistant.saveFolderState(picked);
+  if (!baseline.ok || baseline.count !== 0) throw new Error("empty folder baseline failed");
+  await require("fs/promises").writeFile(${JSON.stringify(inboxPdfPath)}, "%PDF-1.4\\nnew");
+  const firstNew = await window.cignaAssistant.scanDirectory({ ...saved, dir: picked });
+  if (!firstNew.ok) throw new Error(firstNew.error || firstNew.stderr || "new-file scan failed");
+  if (!firstNew.stdout.includes("new/changed files")) throw new Error("new-file scan did not report folder state");
+  const secondNew = await window.cignaAssistant.scanDirectory({ ...saved, dir: picked });
+  if (!secondNew.ok || !secondNew.stdout.includes("No new or changed files")) throw new Error("unchanged folder was not skipped");
   window.cignaAssistant.openChromeSubmit();
   if (!openedUrl.includes("new-submitclaim")) throw new Error("Cigna URL was not opened");
 })().catch((error) => {
@@ -189,6 +212,7 @@ async function runRendererSmoke(pluginRoot) {
             ocrEnabled: true,
             compressEnabled: true,
             organizeEnabled: true,
+            onlyNewEnabled: true,
             ocrCommand: "/usr/local/bin/ocr-wrapper",
           };
         },
@@ -219,6 +243,10 @@ async function runRendererSmoke(pluginRoot) {
             output: "/tmp/outputs/utools-claim-plan.json",
             stdout: "Ready: 1, review: 0, blocked: 0, duplicates: 0",
           };
+        },
+        saveFolderState(dir) {
+          window.__utoolsCalls.push({ type: "saveFolderState", dir });
+          return { ok: true, dir, count: 12 };
         },
         exportChromeBackup(settings) {
           window.__utoolsCalls.push({ type: "exportChromeBackup", settings });
@@ -262,7 +290,7 @@ async function runRendererSmoke(pluginRoot) {
     await page.locator("#openChromeSubmit").click();
     await page.locator("#openReleaseFolder").click();
     calls = await page.evaluate(() => window.__utoolsCalls);
-    assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.claimDir === undefined && call.options.dir === "/tmp" && call.options.filePaths?.length === 2 && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.organizeEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
+    assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.claimDir === undefined && call.options.dir === "/tmp" && call.options.filePaths?.length === 2 && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.organizeEnabled === true && call.options.onlyNewEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
     assert.equal(calls.some((call) => call.type === "exportChromeBackup" && call.settings.beneficiaryName === "PACKAGED USER"), true);
   } finally {
     await browser?.close();

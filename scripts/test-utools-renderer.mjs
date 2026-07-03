@@ -31,6 +31,7 @@ try {
           ocrEnabled: true,
           compressEnabled: true,
           organizeEnabled: true,
+          onlyNewEnabled: true,
           ocrCommand: "/usr/local/bin/ocr-wrapper",
         };
       },
@@ -62,6 +63,10 @@ try {
           stdout: "Ready: 1, review: 0, blocked: 0, duplicates: 0",
         };
       },
+      saveFolderState(dir) {
+        window.__utoolsCalls.push({ type: "saveFolderState", dir });
+        return { ok: true, dir, count: 42 };
+      },
       exportChromeBackup(settings) {
         window.__utoolsCalls.push({ type: "exportChromeBackup", settings });
         return {
@@ -89,6 +94,7 @@ try {
   assert.equal(await page.locator("#ocrEnabled").isChecked(), true);
   assert.equal(await page.locator("#compressEnabled").isChecked(), true);
   assert.equal(await page.locator("#organizeEnabled").isChecked(), true);
+  assert.equal(await page.locator("#onlyNewEnabled").isChecked(), true);
   assert.equal(await page.locator("#ocrCommand").inputValue(), "/usr/local/bin/ocr-wrapper");
   assert.match(await page.locator("#settingsStatus").innerText(), /已就绪/);
 
@@ -119,6 +125,8 @@ try {
   await page.locator("#scanDir").click();
   await page.waitForFunction(() => document.querySelector("#log")?.textContent.includes("扫描完成"));
   assert.match(await page.locator("#log").innerText(), /utools-claim-plan\.json/);
+  await page.locator("#baselineDir").click();
+  assert.match(await page.locator("#log").innerText(), /已建立目录基线/);
 
   await page.locator("#exportChromeBackup").click();
   assert.match(await page.locator("#log").innerText(), /cigna-claim-assistant-chrome-settings-backup\.json/);
@@ -130,7 +138,8 @@ try {
   calls = await page.evaluate(() => window.__utoolsCalls);
   assert.equal(calls.some((call) => call.type === "chooseDirectory"), true);
   assert.equal(calls.some((call) => call.type === "inputFromDrop"), true);
-  assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.paymentLabel === "BANK 0001" && call.options.dir === "/tmp" && call.options.filePaths?.length === 2 && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.organizeEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
+  assert.equal(calls.some((call) => call.type === "scanDirectory" && call.options.paymentLabel === "BANK 0001" && call.options.dir === "/tmp" && call.options.filePaths?.length === 2 && call.options.ocrEnabled === true && call.options.compressEnabled === true && call.options.organizeEnabled === true && call.options.onlyNewEnabled === true && call.options.ocrCommand === "/usr/local/bin/ocr-wrapper"), true);
+  assert.equal(calls.some((call) => call.type === "saveFolderState" && call.dir === "/tmp"), true);
   assert.equal(calls.some((call) => call.type === "exportChromeBackup" && call.settings.beneficiaryName === "TEST USER"), true);
   assert.equal(calls.some((call) => call.type === "openChromeSubmit"), true);
   assert.equal(calls.some((call) => call.type === "openReleaseFolder"), true);

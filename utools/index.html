@@ -62,6 +62,10 @@
           <input id="organizeEnabled" type="checkbox">
           扫描后自动整理命名副本
         </label>
+        <label class="inline">
+          <input id="onlyNewEnabled" type="checkbox">
+          只扫描新增或变化文件
+        </label>
         <label>
           OCR 命令
           <input id="ocrCommand" placeholder="可留空使用 tesseract，或填写 OCR wrapper 路径">
@@ -78,6 +82,7 @@
       <section class="actions">
         <button id="chooseDir">选择文件夹</button>
         <button id="scanDir">扫描并导出计划</button>
+        <button id="baselineDir">建立当前目录基线</button>
         <button id="exportChromeBackup">导出 Chrome 设置</button>
         <button id="openChromeSubmit">打开 Cigna</button>
         <button id="openReleaseFolder">打开发布包目录</button>

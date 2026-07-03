@@ -11,6 +11,7 @@ const fields = {
   ocrEnabled: document.querySelector("#ocrEnabled"),
   compressEnabled: document.querySelector("#compressEnabled"),
   organizeEnabled: document.querySelector("#organizeEnabled"),
+  onlyNewEnabled: document.querySelector("#onlyNewEnabled"),
   ocrCommand: document.querySelector("#ocrCommand"),
 };
 
@@ -41,6 +42,7 @@ fields.claimDir.value = savedSettings.claimDir || "";
 fields.ocrEnabled.checked = Boolean(savedSettings.ocrEnabled);
 fields.compressEnabled.checked = Boolean(savedSettings.compressEnabled);
 fields.organizeEnabled.checked = savedSettings.organizeEnabled !== false;
+fields.onlyNewEnabled.checked = savedSettings.onlyNewEnabled !== false;
 fields.ocrCommand.value = savedSettings.ocrCommand || "";
 
 for (const field of Object.values(fields)) {
@@ -102,6 +104,7 @@ document.querySelector("#scanDir").addEventListener("click", async () => {
     ocrEnabled: fields.ocrEnabled.checked,
     compressEnabled: fields.compressEnabled.checked,
     organizeEnabled: fields.organizeEnabled.checked,
+    onlyNewEnabled: fields.onlyNewEnabled.checked,
     ocrCommand: fields.ocrCommand.value.trim(),
   });
   if (!result.ok) {
@@ -109,6 +112,20 @@ document.querySelector("#scanDir").addEventListener("click", async () => {
     return;
   }
   log(`扫描完成，计划已导出:\n${result.output}\n\n${result.stdout}`);
+});
+
+document.querySelector("#baselineDir").addEventListener("click", () => {
+  const dir = selectedFilePaths.length ? selectedInputDir : fields.claimDir.value.trim();
+  if (!dir) {
+    log("请先选择报销目录。");
+    return;
+  }
+  const result = window.cignaAssistant.saveFolderState(dir);
+  if (!result.ok) {
+    log(`建立目录基线失败: ${result.error}`);
+    return;
+  }
+  log(`已建立目录基线:\n${result.dir}\n文件数: ${result.count}\n之后开启“只扫描新增或变化文件”时，只处理新增、改动或补了 OCR sidecar 的文件。`);
 });
 
 document.querySelector("#exportChromeBackup").addEventListener("click", () => {
@@ -158,6 +175,7 @@ function readSettings() {
     ocrEnabled: fields.ocrEnabled.checked,
     compressEnabled: fields.compressEnabled.checked,
     organizeEnabled: fields.organizeEnabled.checked,
+    onlyNewEnabled: fields.onlyNewEnabled.checked,
     ocrCommand: fields.ocrCommand.value.trim(),
   };
 }
